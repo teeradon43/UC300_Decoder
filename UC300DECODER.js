@@ -397,4 +397,4 @@ console.log(output);
 // console.log(readInt16LE("1181"))
 // console.log(readUInt32LE("ffffff7f"))
 // console.log(readInt32LE("ffffff8f"))
-console.log(readFloatLE("00feffc6").toFixed(2));
+// console.log(readFloatLE("25529ac4").toFixed(2));
