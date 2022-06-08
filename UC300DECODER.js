@@ -36,7 +36,6 @@ function flipHexString(hexValue, hexDigits) {
   }
   return h;
 }
-
 function swap2byte(byte) {
   return ((byte & 0xff) << 8) | ((byte >> 8) & 0xff);
 }
@@ -48,15 +47,12 @@ function swap4byte(byte) {
     ((byte >> 24) & 0xff)
   );
 }
-
 function unWrap(data) {
   return data.slice(2, data.length - 2);
 }
-
 function hex2bin(hex) {
   return parseInt(hex, 16).toString(2).padStart(8, "0");
 }
-
 function getDIstatus(bits) {
   return bits == "00"
     ? "disabled"
@@ -66,7 +62,6 @@ function getDIstatus(bits) {
     ? "Counter mode stop counting"
     : "Counter mode pulse-start counting";
 }
-
 function getAIstatus(bits) {
   return bits == "00"
     ? "disabled"
@@ -76,8 +71,10 @@ function getAIstatus(bits) {
     ? "collect failed"
     : "error";
 }
-
 function readFloatLE(bytes) {
+  /**
+   * @param bytes give 4 bytes of little endian
+   */
   // JavaScript bitwise operators yield a 32 bits integer, not a float.
   // Assume LSB (least significant byte first).
   var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
@@ -87,7 +84,6 @@ function readFloatLE(bytes) {
   var f = sign * m * Math.pow(2, e - 150);
   return f;
 }
-
 function parseFloat(str) {
   if (str === "0x00000000") return 0;
   var float = 0,
@@ -109,7 +105,6 @@ function parseFloat(str) {
       multi *= 256;
     }
   }
-  console.log(int);
   sign = int >>> 31 ? -1 : 1;
   exp = ((int >>> 23) & 0xff) - 127;
 
@@ -120,7 +115,10 @@ function parseFloat(str) {
   }
   return float * sign;
 }
-
+//TODO: Create ReadBits Function
+//TODO: Create ReadByte Function
+//TODO: Create ReadInt Function
+//TODO: Create ReadFloat Function
 function decoder(payload) {
   var output = {
     data_type: "",
@@ -140,7 +138,7 @@ function decoder(payload) {
   var do_status = {};
   var di_status = {};
   var ai_status = {};
-  var modbus = {};
+  var modbus = [];
   payload = unWrap(payload); // remove start-stop bit
   payload = payload.match(/.{1,2}/g); // slice string to arrays (byte formatted)
   // console.log(payload);
@@ -195,7 +193,6 @@ function decoder(payload) {
 
   /* ======= if Toggle Digital Output enabled, read Digital Output Status ======= */
   if (do_status.do1 === "enabled" || do_status.do2 === "enabled") {
-    //TODO: Read Digital Output Status
     let DOStatus = payload[byte++];
     switch (DOStatus) {
       case "00":
@@ -289,7 +286,7 @@ function decoder(payload) {
           payload[byte + 2] +
           payload[byte + 1] +
           payload[byte];
-        ai_value[`${key}`] = parseFloat("0x" + readAnalog)
+        ai_value[`${key}`] = parseFloat("0x" + readAnalog) // TODO: Check Float32 value
           .toFixed(2)
           .toString();
         byte += 4;
@@ -299,25 +296,71 @@ function decoder(payload) {
   }
 
   /* ======= if has byte left read Modbus  ======= */
+  var MODBUS_DataType = [
+    "Coil",
+    "Discrete",
+    "Input16",
+    "Hold16",
+    "Hold32",
+    "Hold_float",
+    "Input32",
+    "Input_float",
+    "Input_int32_with upper 16 bits",
+    "Input_int32_with lower 16 bits",
+    "Hold_int32_with upper 16 bits",
+    "Hold_int32_with lower 16 bits",
+  ];
   while (payload.length > byte) {
-    // TODO: Read Modbus
-    console.log("has modbus left to read");
-    break;
+    //read Channel ID & dataType
+    let IdType = payload[byte++];
+    let channelId = Number("0x" + IdType[0]);
+    let dataType = Number("0x" + IdType[1]);
+    let regSetting = hex2bin("0x" + payload[byte++]);
+    var sign = regSetting[0];
+    var dec = regSetting.slice(1, 4);
+    var stat = regSetting[4];
+    var qty = Number("0b" + regSetting.slice(5, 8));
+    var data = [];
+    for (let i = 0; qty > i; i++) {
+      if (MODBUS_DataType[dataType].includes("16")) {
+        data.push(payload[byte++] + payload[byte++]);
+      } //Read2Byte
+      else if (
+        MODBUS_DataType[dataType].includes("32") ||
+        MODBUS_DataType[dataType].includes("float")
+      ) {
+        data.push(
+          payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++]
+        );
+      } //Read4Byte
+      else data.push(payload[byte++]);
+    }
+    modbus.push({
+      channel: (channelId + 1).toString(),
+      type: MODBUS_DataType[dataType],
+      regSetting: { status: stat, qty: qty },
+      value: data,
+    });
   }
-
+  output.modbus = modbus;
   return output;
 }
 
+/** =====================*/
 var data = {
   TEST_CASE_1: "7EF40F000A7A80576214000000007E",
   TEST_CASE_2:
     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E",
   TEST_CASE_3: "7EF418000A7A8057621100000000022A150020001021007E",
   TEST_CASE_18:
-    "7ef47f000a494c90621c030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b900feffc697b900feffc6a7b900feffc6b7b900feffc6c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff",
+    "7ef47f000a494c90621c030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b900feffc697b900feffc6a7b900feffc6b7b900feffc6c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e",
   TEST_CASE_134:
     "7ef47f000ad57e90621a0300550055059a993141000080400000000000000000cdccb8413333c341003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e",
 };
+/** =====================*/
 
-let output = decoder(data.TEST_CASE_1);
+/** Main ================*/
+let output = JSON.stringify(decoder(data.TEST_CASE_18), null, 2);
+// let output = decoder(data.TEST_CASE_134);
 console.log(output);
+/** =====================*/
