@@ -170,10 +170,8 @@ function decoder(payload) {
   output.packet_length = Number("0x" + packetLength).toString();
 
   /* ======= Read Packet Version 1 bytes ======= */
-  let resolution = 0.1;
-  output.packet_version = (Number("0x" + payload[byte++]) * resolution).toFixed(
-    1
-  );
+  let resolution = 1;
+  output.packet_version = Number("0x" + payload[byte++]) * resolution;
 
   /* ======= Read Timestamp 4 bytes ======= */
   var timeStamp =
@@ -299,7 +297,7 @@ function decoder(payload) {
       if (value !== "disabled") {
         let readAnalog =
           payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++];
-        ai_value[`${key}`] = readFloatLE("0x" + readAnalog) // TODO: Check Float32 value
+        ai_value[`${key}`] = readFloatLE(readAnalog) // TODO: Check Float32 value
           .toFixed(2)
           .toString();
       }
@@ -330,7 +328,8 @@ function decoder(payload) {
     let regSetting = hex2bin("0x" + payload[byte++]);
     var sign = regSetting[0];
     var dec = regSetting.slice(1, 4);
-    var stat = regSetting[4];
+    var stat =
+      regSetting[4] === "1" ? "collected successfully" : "collect failed";
     var qty = Number("0b" + regSetting.slice(5, 8));
     var data = [];
     for (let i = 0; qty > i; i++) {
@@ -381,6 +380,10 @@ var data = {
     "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e",
   TEST_CASE_25:
     "7ef489000a568a90621c03005500550500000000000000000000000000000000000000000000000005b925529ac415b925529ac425b925529ac435b925529ac446b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e",
+  TEST_CASE_126:
+    "7ef47f000a267d90621e030055005505ae4735410000804000000000000000003333bf410000c841003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e",
+  TEST_CASE_127:
+    "7ef47f000a267d90621e030055005505ae4735410000804000000000000000003333bf410000c841003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e",
   TEST_CASE_134:
     "7ef47f000ad57e90621a0300550055059a993141000080400000000000000000cdccb8413333c341003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e",
 };
@@ -388,7 +391,7 @@ var data = {
 
 /** TEST ================*/
 // let output = decoder(data.TEST_CASE_134);
-let output = JSON.stringify(decoder(data.TEST_CASE_25), null, 2);
+let output = JSON.stringify(decoder(data.TEST_CASE_134), null, 2);
 console.log(output);
 /** =====================*/
 
@@ -406,4 +409,4 @@ console.log(output);
 // console.log(readInt16LE("1181"))
 // console.log(readUInt32LE("ffffff7f"))
 // console.log(readInt32LE("ffffff8f"))
-// console.log(readFloatLE("25529ac4").toFixed(2));
+// console.log(readFloatLE("6666DE41").toFixed(3));
