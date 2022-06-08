@@ -11,4 +11,6 @@ Working:
 - Optimizing
 
 Upcoming:
-
+- Check Secure
+-   Packet Length
+-   Start/Stop byte
