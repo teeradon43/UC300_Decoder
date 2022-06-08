@@ -344,7 +344,7 @@ function decoder(payload) {
               payload[byte++] +
               payload[byte++] +
               payload[byte++]
-          )
+          ).toFixed(3)
         );
       } //Read4Byte
       else if (MODBUS_DataType[dataType].includes("32")) {
@@ -357,7 +357,7 @@ function decoder(payload) {
           )
         );
       } //Read4Byte
-      else data.push(readInt16LE(payload[byte++]));
+      else data.push(readInt16LE(payload[byte++]) === 0 ? "off" : "on");
     }
     modbus.push({
       channel: (channelId + 1).toString(),
@@ -378,16 +378,25 @@ var data = {
     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E",
   TEST_CASE_3: "7EF418000A7A8057621100000000022A150020001021007E",
   TEST_CASE_18:
-    "7ef47f000a494c90621c030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b900feffc697b900feffc6a7b900feffc6b7b900feffc6c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e",
+    "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e",
+  TEST_CASE_25:
+    "7ef489000a568a90621c03005500550500000000000000000000000000000000000000000000000005b925529ac415b925529ac425b925529ac435b925529ac446b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e",
   TEST_CASE_134:
     "7ef47f000ad57e90621a0300550055059a993141000080400000000000000000cdccb8413333c341003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e",
 };
 /** =====================*/
 
 /** TEST ================*/
-let output = JSON.stringify(decoder(data.TEST_CASE_18), null, 2);
 // let output = decoder(data.TEST_CASE_134);
+let output = JSON.stringify(decoder(data.TEST_CASE_25), null, 2);
 console.log(output);
+/** =====================*/
+
+/** Write Output File ===*/
+// var fs = require("fs");
+// fs.writeFile("output.json", output, "utf8", function (err) {
+//   throw err;
+// });
 /** =====================*/
 
 // console.log(readUInt8("8f"))
