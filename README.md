@@ -12,5 +12,5 @@ Working:
 
 Upcoming:
 - Check Secure
--   Packet Length
--   Start/Stop byte
+  - Packet Length
+  - Start/Stop byte
