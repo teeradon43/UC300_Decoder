@@ -28,24 +28,56 @@
                                 Modbus RS485            0~288bytes => Modbus 0~18 Channel, ประกอบด้วย Ch.ID&DataType (1) + RegSetting(1)+ Data(Mutable) 
 */
 
-function flipHexString(hexValue, hexDigits) {
-  // var h = hexValue.substr(0, 2);
-  var h = "";
-  for (var i = 0; i < hexDigits; i++) {
-    h += hexValue.substr((hexDigits - 1 - i) * 2, 2);
+/**@param {string} byte takes hex string without prefix 0x, eg. 7f */
+function readUInt8(byte) {
+  if (byte.length !== 2) {
+    return 0;
   }
-  return h;
+  return ("0x" + byte) & 0xff;
 }
-function swap2byte(byte) {
-  return ((byte & 0xff) << 8) | ((byte >> 8) & 0xff);
+/**@param {string} byte takes hex string without prefix 0x, eg. 7f */
+function readInt8(byte) {
+  var val = readUInt8(byte);
+  return val > 0x7f ? val - 0x100 : val;
 }
-function swap4byte(byte) {
-  return (
-    ((byte & 0xff) << 24) |
-    ((byte & 0xff00) << 8) |
-    ((byte >> 8) & 0xff00) |
-    ((byte >> 24) & 0xff)
-  );
+/**@param {string} bytes takes hex string (2 bytes) without prefix 0x, eg. 37ff */
+function readUInt16LE(bytes) {
+  var val = "0x" + bytes.slice(2, 4) + bytes.slice(0, 2);
+  return val & 0xffff;
+}
+/**@param {string} bytes takes hex string (2 bytes) without prefix 0x, eg. 37ff */
+function readInt16LE(bytes) {
+  var val = readUInt16LE(bytes);
+  return val > 0x7fff ? val - 0x10000 : val;
+}
+/**@param {string} bytes takes hex string (4 bytes) without prefix 0x, eg. 37ffffff */
+function readUInt32LE(bytes) {
+  var val =
+    "0x" +
+    bytes.slice(6, 8) +
+    bytes.slice(4, 6) +
+    bytes.slice(2, 4) +
+    bytes.slice(0, 2);
+  return val & 0xffffffff;
+}
+/**@param {string} bytes takes hex string (4 bytes) without prefix 0x, eg. 37ffffff */
+function readInt32LE(bytes) {
+  var val = readUInt32LE(bytes);
+  return val > 0x7fffffff ? val - 0x100000000 : val;
+}
+/**@param {string} bytes takes hex string (4 bytes) without prefix 0x, eg. 37ffffff */
+function readFloatLE(bytes) {
+  var val =
+    "0x" +
+    bytes.slice(6, 8) +
+    bytes.slice(4, 6) +
+    bytes.slice(2, 4) +
+    bytes.slice(0, 2);
+  let sign = val >>> 31 === 0 ? 1.0 : -1.0;
+  let e = (val >>> 23) & 0xff;
+  let m = e === 0 ? (val & 0x7fffff) << 1 : (val & 0x7fffff) | 0x800000;
+  var float32 = sign * m * Math.pow(2, e - 150);
+  return float32;
 }
 function unWrap(data) {
   return data.slice(2, data.length - 2);
@@ -70,19 +102,6 @@ function getAIstatus(bits) {
     : bits == "10"
     ? "collect failed"
     : "error";
-}
-function readFloatLE(bytes) {
-  /**
-   * @param bytes give 4 bytes of little endian
-   */
-  // JavaScript bitwise operators yield a 32 bits integer, not a float.
-  // Assume LSB (least significant byte first).
-  var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
-  var sign = bits >>> 31 === 0 ? 1.0 : -1.0;
-  var e = (bits >>> 23) & 0xff;
-  var m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
-  var f = sign * m * Math.pow(2, e - 150);
-  return f;
 }
 function parseFloat(str) {
   if (str === "0x00000000") return 0;
@@ -115,10 +134,7 @@ function parseFloat(str) {
   }
   return float * sign;
 }
-//TODO: Create ReadBits Function
-//TODO: Create ReadByte Function
-//TODO: Create ReadInt Function
-//TODO: Create ReadFloat Function
+/** MAIN FUNCTION =======*/
 function decoder(payload) {
   var output = {
     data_type: "",
@@ -282,14 +298,10 @@ function decoder(payload) {
     for (const [key, value] of Object.entries(ai_status)) {
       if (value !== "disabled") {
         let readAnalog =
-          payload[byte + 3] +
-          payload[byte + 2] +
-          payload[byte + 1] +
-          payload[byte];
-        ai_value[`${key}`] = parseFloat("0x" + readAnalog) // TODO: Check Float32 value
+          payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++];
+        ai_value[`${key}`] = readFloatLE("0x" + readAnalog) // TODO: Check Float32 value
           .toFixed(2)
           .toString();
-        byte += 4;
       }
     }
     output.ai_value = ai_value;
@@ -323,17 +335,29 @@ function decoder(payload) {
     var data = [];
     for (let i = 0; qty > i; i++) {
       if (MODBUS_DataType[dataType].includes("16")) {
-        data.push(payload[byte++] + payload[byte++]);
+        data.push(readInt16LE(payload[byte++] + payload[byte++]));
       } //Read2Byte
-      else if (
-        MODBUS_DataType[dataType].includes("32") ||
-        MODBUS_DataType[dataType].includes("float")
-      ) {
+      else if (MODBUS_DataType[dataType].includes("float")) {
         data.push(
-          payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++]
+          readFloatLE(
+            payload[byte++] +
+              payload[byte++] +
+              payload[byte++] +
+              payload[byte++]
+          )
         );
       } //Read4Byte
-      else data.push(payload[byte++]);
+      else if (MODBUS_DataType[dataType].includes("32")) {
+        data.push(
+          readInt32LE(
+            payload[byte++] +
+              payload[byte++] +
+              payload[byte++] +
+              payload[byte++]
+          )
+        );
+      } //Read4Byte
+      else data.push(readInt16LE(payload[byte++]));
     }
     modbus.push({
       channel: (channelId + 1).toString(),
@@ -345,8 +369,9 @@ function decoder(payload) {
   output.modbus = modbus;
   return output;
 }
-
 /** =====================*/
+
+/** TEST CASE ===========*/
 var data = {
   TEST_CASE_1: "7EF40F000A7A80576214000000007E",
   TEST_CASE_2:
@@ -359,8 +384,17 @@ var data = {
 };
 /** =====================*/
 
-/** Main ================*/
+/** TEST ================*/
 let output = JSON.stringify(decoder(data.TEST_CASE_18), null, 2);
 // let output = decoder(data.TEST_CASE_134);
 console.log(output);
 /** =====================*/
+
+// console.log(readUInt8("8f"))
+// console.log(readInt8("8f"))
+// console.log(readInt8("8f"))
+// console.log(readUInt16LE("1181"))
+// console.log(readInt16LE("1181"))
+// console.log(readUInt32LE("ffffff7f"))
+// console.log(readInt32LE("ffffff8f"))
+console.log(readFloatLE("00feffc6").toFixed(2));
