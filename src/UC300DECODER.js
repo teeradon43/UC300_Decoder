@@ -95,7 +95,7 @@ function getDIstatus(bits) {
     ? "Counter mode stop counting"
     : "Counter mode pulse-start counting";
 }
-function getAIstatus(bits) {
+export function getAIstatus(bits) {
   return bits == "00"
     ? "disabled"
     : bits == "01"
@@ -384,7 +384,7 @@ var data = {
 
 /** TEST ================*/
 // let output = decoder(data.TEST_CASE_134);
-let output = JSON.stringify(decoder(data.TEST_CASE_2), null, 2);
+let output = JSON.stringify(decoder(data.TEST_CASE_1), null, 2);
 console.log(output);
 /** =====================*/
 
