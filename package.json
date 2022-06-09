@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "jest": "^28.1.1"
+  },
+  "name": "uc300",
+  "description": "Available\r - Show DataType, Packet Length\r - Read mutable Digital I/Os status\r - Read mutable Analog Inputs status\r - Read Modbus",
+  "version": "1.0.0",
+  "main": "UC300DECODER.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teeradon43/UC300_Decoder.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/teeradon43/UC300_Decoder/issues"
+  },
+  "homepage": "https://github.com/teeradon43/UC300_Decoder#readme"
+}
