@@ -1,6 +1,10 @@
 const BYTE_INDEX = {
   DATA_TYPE: 1,
   PACKET_LENGTH: 2,
+  PACKET_VERSION: 4,
+  TIMESTAMP: 5,
+  SIGNAL: 9,
+  TOGGLE_DIGITAL_INPUT: 10,
 };
 
 const OUTPUT_TEMPLATE = {
@@ -25,12 +29,25 @@ function byte2hex(byte) {
 function decode(bytes) {
   var output = { ...OUTPUT_TEMPLATE };
 
-  const { DATA_TYPE, PACKET_LENGTH } = BYTE_INDEX;
+  const {
+    DATA_TYPE,
+    PACKET_LENGTH,
+    PACKET_VERSION,
+    TIMESTAMP,
+    SIGNAL,
+    TOGGLE_DIGITAL_INPUT,
+  } = BYTE_INDEX;
   output.data_type = byte2hex(bytes[DATA_TYPE]);
   output.packet_length = readInt16LE(
     bytes.slice(PACKET_LENGTH, PACKET_LENGTH + 2)
   );
-
+  output.packet_version = readInt8LE(bytes[PACKET_VERSION]);
+  var timeStamp = new Date(
+    readUInt32LE(bytes.slice(TIMESTAMP, TIMESTAMP + 4)) * 1000
+  ).toString();
+  output.timestamp = timeStamp;
+  output.signal_strength = readInt8LE(bytes[SIGNAL]);
+  output.do_status = getToggleDigitalOutput(bytes[TOGGLE_DIGITAL_INPUT]);
   return output;
 }
 
@@ -80,37 +97,66 @@ function readFloatLE(bytes) {
 /* ******************************************
  *
  ********************************************/
-
-function getDigitalInputStatus(bits) {
-  switch (bits) {
-    case "00":
+function getToggleDigitalOutput(byte) {
+  switch (byte) {
+    case 0x00:
+      return "DO1 and DO2 disabled";
+    case 0x01:
+      return "DO1 enabled, DO2 disabled";
+    case 0x02:
+      return "DO1 disabled, DO2 enabled";
+    case 0x03:
+      return "DO1 and DO2 enabled";
+    default:
+      return "Not Valid Input";
+  }
+}
+function getDigitalOutputStatus(byte) {
+  switch (byte) {
+    case 0x00:
+      return "DO1 and DO2 closed";
+    case 0x01:
+      return "DO1 open, DO2 closed";
+    case 0x02:
+      return "DO1 closed, DO2 open";
+    case 0x03:
+      return "DO1 and DO2 open";
+    default:
+      return "Not Valid Input";
+  }
+}
+function getToggleDigitalInput(byte) {
+  switch (byte) {
+    case 0x00:
       return "disabled";
-    case "01":
+    case 0x01:
       return "Digital Input Mode";
-    case "10":
+    case 0x10:
       return "Counter mode stop counting";
-    case "11":
+    case 0x11:
       return "Counter mode pulse-start counting";
     default:
       return "Not Valid Input";
   }
 }
 
-function getAnalogInputStatus(bits) {
-  switch (bits) {
-    case "00":
+function getAnalogInputStatus(byte) {
+  switch (byte) {
+    case 0x00:
       return "disabled";
-    case "01":
+    case 0x01:
       return "collected successfully";
-    case "10":
+    case 0x10:
       return "collect failed";
     default:
-      return "error";
+      return "Not Valid Input";
   }
 }
 
 module.exports = {
-  getDigitalInputStatus,
+  getToggleDigitalOutput,
+  getDigitalOutputStatus,
+  getToggleDigitalInput,
   getAnalogInputStatus,
   decode,
 };
