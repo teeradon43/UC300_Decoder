@@ -80,6 +80,7 @@ function readFloatLE(bytes) {
   return float32;
 }
 function unWrap(data) {
+  //TODO: Check if the data that slice is the real start/stop byte
   return data.slice(2, data.length - 2);
 }
 function hex2bin(hex) {
@@ -135,6 +136,7 @@ function parseFloat(str) {
   return float * sign;
 }
 /** MAIN FUNCTION =======*/
+/**@param {decoder} payload takes hex string (payload) from start to the stop byte without prefix 0x, eg. 7EF40F000A7A80576214000000007E*/
 function decoder(payload) {
   var output = {
     data_type: "",
@@ -155,49 +157,47 @@ function decoder(payload) {
   var di_status = {};
   var ai_status = {};
   var modbus = [];
-  payload = unWrap(payload); // remove start-stop bit
-  payload = payload.match(/.{1,2}/g); // slice string to arrays (byte formatted)
-  // console.log(payload);
-
   var byte = 0; // byte counter
 
+  payload = unWrap(payload); // remove start-stop bit
+  payload = payload.match(/.{1,2}/g); // slice string to arrays (byte formatted) ["7E","F4","0F",...,"7E"]
+  // console.log(payload);
+
   /* ======= Read Data Type 1 byte ======= */
-  output.data_type = payload[byte++]; // read dataType 1 byte
+  output.data_type = payload[byte++]; // TODO: Check if data_type is not "F4"
 
   /* ======= Read Packet Length 2 bytes ======= */
-  var packetLength = payload[byte + 1] + payload[byte]; // read PacketLength 2 bytes
-  byte += 2;
-  output.packet_length = Number("0x" + packetLength).toString();
+  var packetLength = readUInt16LE(payload[byte++] + payload[byte++]);
+  output.packet_length = packetLength;
 
   /* ======= Read Packet Version 1 bytes ======= */
-  let resolution = 1;
-  output.packet_version = Number("0x" + payload[byte++]) * resolution;
+  let resolution = 1; // resolution 0.1 : v10 -> v1.0
+  output.packet_version = readUInt8(payload[byte++]) * resolution;
 
   /* ======= Read Timestamp 4 bytes ======= */
   var timeStamp =
-    payload[byte + 3] + payload[byte + 2] + payload[byte + 1] + payload[byte];
-  output.timestamp = new Date(Number("0x" + timeStamp) * 1000).toString();
-  byte += 4;
+    payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++];
+  output.timestamp = new Date(readInt32LE(timeStamp) * 1000).toString();
 
   /* ======= Read Signal Strength ======= */
-  output.signal_strength = Number("0x" + payload[byte++]).toString(); // + " asu";
+  output.signal_strength = readInt16LE(payload[byte++]).toString(); // + " asu";
 
   /* ======= Read Toggle Digital Output ======= */
-  let TogDOStatus = payload[byte++];
+  let TogDOStatus = readInt16LE(payload[byte++]);
   switch (TogDOStatus) {
-    case "00":
+    case 0x00:
       do_status.do1 = "disabled";
       do_status.do2 = "disabled";
       break;
-    case "01":
+    case 0x01:
       do_status.do1 = "enabled";
       do_status.do2 = "disabled";
       break;
-    case "02":
+    case 0x02:
       do_status.do1 = "disabled";
       do_status.do2 = "enabled";
       break;
-    case "03":
+    case 0x03:
       do_status.do1 = "enabled";
       do_status.do2 = "enabled";
       break;
@@ -207,21 +207,21 @@ function decoder(payload) {
 
   /* ======= if Toggle Digital Output enabled, read Digital Output Status ======= */
   if (do_status.do1 === "enabled" || do_status.do2 === "enabled") {
-    let DOStatus = payload[byte++];
+    let DOStatus = readInt16LE(payload[byte++]);
     switch (DOStatus) {
-      case "00":
+      case 0x00:
         do_status.do1 = { en: do_status.do1, status: "closed" };
         do_status.do2 = { en: do_status.do2, status: "closed" };
         break;
-      case "01":
+      case 0x01:
         do_status.do1 = { en: do_status.do1, status: "open" };
         do_status.do2 = { en: do_status.do2, status: "closed" };
         break;
-      case "10":
+      case 0x10:
         do_status.do1 = { en: do_status.do1, status: "closed" };
         do_status.do2 = { en: do_status.do2, status: "open" };
         break;
-      case "11":
+      case 0x11:
         do_status.do1 = { en: do_status.do1, status: "open" };
         do_status.do2 = { en: do_status.do2, status: "open" };
         break;
@@ -252,7 +252,7 @@ function decoder(payload) {
       }
     }
     if (input.length > 0) {
-      var readDI = hex2bin(payload[byte++]).slice(4, 8);
+      var readDI = hex2bin(payload[byte++]).slice(4, 8); // reserved 7-4 : 4,3,2,1
       var di_value = {};
       for (let i = 0; i < input.length; i++) {
         di_value[`di${input[i]}`] =
@@ -265,14 +265,9 @@ function decoder(payload) {
       var di_counter = {};
       while (counter.length > 0) {
         let readCounter =
-          payload[byte + 3] +
-          payload[byte + 2] +
-          payload[byte + 1] +
-          payload[byte];
-        di_counter[`di${counter.shift()}`] = Number(
-          "0x" + readCounter
-        ).toString();
-        byte += 4;
+          payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++];
+        di_counter[`di${counter.shift()}`] =
+          readUInt32LE(readCounter).toString();
       }
       output.di_counter = di_counter;
     }
@@ -297,15 +292,13 @@ function decoder(payload) {
       if (value !== "disabled") {
         let readAnalog =
           payload[byte++] + payload[byte++] + payload[byte++] + payload[byte++];
-        ai_value[`${key}`] = readFloatLE(readAnalog) // TODO: Check Float32 value
-          .toFixed(2)
-          .toString();
+        ai_value[`${key}`] = readFloatLE(readAnalog).toFixed(2).toString();
       }
     }
     output.ai_value = ai_value;
   }
 
-  /* ======= if has byte left read Modbus  ======= */
+  /* ======= if has byte left, read Modbus  ======= */
   var MODBUS_DataType = [
     "Coil",
     "Discrete",
@@ -356,7 +349,7 @@ function decoder(payload) {
           )
         );
       } //Read4Byte
-      else data.push(readInt16LE(payload[byte++]) === 0 ? "off" : "on");
+      else data.push(readInt16LE(payload[byte++]) === 0 ? "off" : "on"); // Coil, Discrete
     }
     modbus.push({
       channel: (channelId + 1).toString(),
@@ -391,7 +384,7 @@ var data = {
 
 /** TEST ================*/
 // let output = decoder(data.TEST_CASE_134);
-let output = JSON.stringify(decoder(data.TEST_CASE_134), null, 2);
+let output = JSON.stringify(decoder(data.TEST_CASE_2), null, 2);
 console.log(output);
 /** =====================*/
 
