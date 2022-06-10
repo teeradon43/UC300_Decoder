@@ -72,6 +72,15 @@ test("decode case 1", () => {
   expect(output.signal_strength).toBe(20);
   expect(output.do_status).toBe("DO1 and DO2 disabled");
   expect(output.di_status.DI1).toBe("disabled");
+  expect(output.di_status.DI2).toBe("disabled");
+  expect(output.di_status.DI3).toBe("disabled");
+  expect(output.di_status.DI4).toBe("disabled");
+  // expect(output.ai_status.i4_20mA_1).toBe("disabled");
+  // expect(output.ai_status.i4_20mA_2).toBe("disabled");
+  // expect(output.ai_status.i0_10V_1).toBe("disabled");
+  // expect(output.ai_status.i0_10V_2).toBe("disabled");
+  // expect(output.ai_status.iPT100_1).toBe("disabled");
+  // expect(output.ai_status.iPT100_2).toBe("disabled");
 });
 
 test("decode case 2", () => {
@@ -80,13 +89,24 @@ test("decode case 2", () => {
   const bytes = Buffer.from(rawData, "hex");
   output = decode(bytes);
   expect(output.data_type).toBe("f4");
-  // expect(output.packet_length).toBe(15);
-  // expect(output.packet_version).toBe(10);
-  // expect(output.timestamp);
-  // expect(output.signal_strength).toBe(20);
+  expect(output.packet_length).toBe(37);
+  expect(output.packet_version).toBe(10);
+  expect(output.timestamp);
+  expect(output.signal_strength).toBe(17);
   expect(output.do_status).toBe("DO1 open, DO2 closed");
+  expect(output.di_status.DI1).toBe("disabled");
+  expect(output.di_status.DI2).toBe("Counter mode stop counting");
+  expect(output.di_status.DI3).toBe("Digital Input Mode");
+  expect(output.di_status.DI4).toBe("Counter mode pulse-start counting");
+  expect(output.di_value.DI3).toBe("low");
   expect(output.di_counter.DI2).toBe(0);
   expect(output.di_counter.DI4).toBe(21);
+  // expect(output.ai_status.i4_20mA_1).toBe("disabled");
+  // expect(output.ai_status.i4_20mA_2).toBe("collected successfully");
+  // expect(output.ai_status.i0_10V_1).toBe("disabled");
+  // expect(output.ai_status.i0_10V_2).toBe("disabled");
+  // expect(output.ai_status.iPT100_1).toBe("collected successfully");
+  // expect(output.ai_status.iPT100_2).toBe("collected successfully");
 });
 
 test("decode case 3", () => {

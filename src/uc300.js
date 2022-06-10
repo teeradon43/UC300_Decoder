@@ -43,7 +43,7 @@ function byte2hex(byte) {
 }
 
 function decode(bytes) {
-  var output = { ...OUTPUT_TEMPLATE };
+  let output = { ...OUTPUT_TEMPLATE };
 
   const {
     DATA_TYPE,
@@ -56,7 +56,7 @@ function decode(bytes) {
     TOGGLE_ANALOG_INPUT,
   } = BYTE_INDEX;
 
-  var additionalByte = 0;
+  let additionalByte = 0;
 
   // static
   output.data_type = byte2hex(bytes[DATA_TYPE]);
@@ -64,7 +64,7 @@ function decode(bytes) {
     bytes.slice(PACKET_LENGTH, PACKET_LENGTH + 2)
   );
   output.packet_version = readInt8LE(bytes[PACKET_VERSION]);
-  var timeStamp = new Date(
+  let timeStamp = new Date(
     readUInt32LE(bytes.slice(TIMESTAMP, TIMESTAMP + 4)) * 1000
   ).toString();
   output.timestamp = timeStamp;
@@ -83,21 +83,21 @@ function decode(bytes) {
   }
 
   // digital input
-  var toggleDigitalInputByte = TOGGLE_DIGITAL_INPUT + additionalByte;
-  var [di_status, input, counter] = getToggleDigitalInput(
+  let toggleDigitalInputByte = TOGGLE_DIGITAL_INPUT + additionalByte;
+  let [di_status, input, counter] = getToggleDigitalInput(
     bytes[toggleDigitalInputByte]
   );
   output.di_status = di_status;
 
   if (input.length > 0) {
     additionalByte++;
-    var DIGI_INPUT_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
-    output.di_status = getDigitalInput(bytes[DIGI_INPUT_INDEX]);
+    let DIGI_INPUT_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
+    output.di_value = getDigitalInput(bytes[DIGI_INPUT_INDEX]);
   }
   if (counter.length > 0) {
     additionalByte++;
-    var DIGI_COUNTER_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
-    var di_counter = getDigitalCounter(
+    let DIGI_COUNTER_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
+    let di_counter = getDigitalCounter(
       bytes.slice(DIGI_COUNTER_INDEX, DIGI_COUNTER_INDEX + 4 * counter.length),
       counter
     );
