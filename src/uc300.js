@@ -4,7 +4,9 @@ const BYTE_INDEX = {
   PACKET_VERSION: 4,
   TIMESTAMP: 5,
   SIGNAL: 9,
-  TOGGLE_DIGITAL_INPUT: 10,
+  TOGGLE_DIGITAL_OUTPUT: 10,
+  TOGGLE_DIGITAL_INPUT: 11,
+  TOGGLE_ANALOG_INPUT: 12,
 };
 
 const OUTPUT_TEMPLATE = {
@@ -22,6 +24,20 @@ const OUTPUT_TEMPLATE = {
   modbus: {},
 };
 
+const DIGITAL_INPUT_TEMPLATE = {
+  DI1: "",
+  DI2: "",
+  DI3: "",
+  DI4: "",
+};
+
+const DIGITAL_INPUT_VALUE_TEMPLATE = {
+  DI1: "",
+  DI2: "",
+  DI3: "",
+  DI4: "",
+};
+
 function byte2hex(byte) {
   return parseInt(byte).toString(16);
 }
@@ -35,8 +51,14 @@ function decode(bytes) {
     PACKET_VERSION,
     TIMESTAMP,
     SIGNAL,
+    TOGGLE_DIGITAL_OUTPUT,
     TOGGLE_DIGITAL_INPUT,
+    TOGGLE_ANALOG_INPUT,
   } = BYTE_INDEX;
+
+  var ADDITIONAL_BYTE = 0;
+
+  // static
   output.data_type = byte2hex(bytes[DATA_TYPE]);
   output.packet_length = readInt16LE(
     bytes.slice(PACKET_LENGTH, PACKET_LENGTH + 2)
@@ -47,9 +69,36 @@ function decode(bytes) {
   ).toString();
   output.timestamp = timeStamp;
   output.signal_strength = readInt8LE(bytes[SIGNAL]);
-  output.do_status = getToggleDigitalOutput(bytes[TOGGLE_DIGITAL_INPUT]);
+
+  // digital output
+  output.do_status = getToggleDigitalOutput(bytes[TOGGLE_DIGITAL_OUTPUT]);
+  if (bytes[TOGGLE_DIGITAL_OUTPUT] > 0) {
+    ADDITIONAL_BYTE++;
+    var DIGI_OUTPUT = TOGGLE_DIGITAL_OUTPUT + ADDITIONAL_BYTE;
+    output.do_status = getDigitalOutputStatus(bytes[DIGI_OUTPUT]);
+  }
+
+  // digital input
+  var TOG_DIGI_INPUT = TOGGLE_DIGITAL_INPUT + ADDITIONAL_BYTE;
+  var [di_status, input, counter] = getToggleDigitalInput(
+    bytes[TOG_DIGI_INPUT]
+  );
+  output.di_status = di_status;
+  if (input.length > 0) {
+    ADDITIONAL_BYTE++;
+    var DIGI_INPUT = TOGGLE_DIGITAL_INPUT + ADDITIONAL_BYTE;
+    output.di_status = getDigitalInput(bytes[DIGI_INPUT]);
+  }
+  if (counter.length > 0) {
+  }
+
+  // analog input
+
+  // modbus
   return output;
 }
+
+console.log(decode("7EF40F000A7A80576214000000007E").di_status);
 
 /* ******************************************
  * bytes to number
@@ -111,6 +160,7 @@ function getToggleDigitalOutput(byte) {
       return "Not Valid Input";
   }
 }
+
 function getDigitalOutputStatus(byte) {
   switch (byte) {
     case 0x00:
@@ -125,28 +175,65 @@ function getDigitalOutputStatus(byte) {
       return "Not Valid Input";
   }
 }
-function getToggleDigitalInput(byte) {
-  switch (byte) {
-    case 0x00:
+
+function getDigitalInputMode(bits) {
+  switch (bits) {
+    case 0b00:
       return "disabled";
-    case 0x01:
+    case 0b01:
       return "Digital Input Mode";
-    case 0x10:
+    case 0b10:
       return "Counter mode stop counting";
-    case 0x11:
+    case 0b11:
       return "Counter mode pulse-start counting";
     default:
       return "Not Valid Input";
   }
 }
 
-function getAnalogInputStatus(byte) {
-  switch (byte) {
-    case 0x00:
+function getToggleDigitalInput(byte) {
+  var di_input = { ...DIGITAL_INPUT_TEMPLATE };
+  var input = [];
+  var counter = [];
+  for (let i = 0; i < 4; i++) {
+    let result = getDigitalInputMode((byte >> (2 * i)) & 0b11);
+    di_input[`DI${i + 1}`] = result;
+    if (result.includes("Input Mode")) {
+      input.push(i + 1);
+    } else if (result.includes("Counter")) {
+      counter.push(i + 1);
+    }
+  }
+  return [di_input, input, counter];
+}
+
+function getDigitalInput(byte) {
+  var di_value = { ...DIGITAL_INPUT_VALUE_TEMPLATE };
+  if (byte > 0x0f) return "Not Valid Input";
+  for (let i = 0; i < 4; i++) {
+    di_value[`DI${i + 1}`] = getDigitalInputStatus((byte >> i) & 1);
+  }
+  return di_value;
+}
+
+function getDigitalInputStatus(bits) {
+  switch (bits) {
+    case 0:
+      return "low";
+    case 1:
+      return "high";
+    default:
+      return "Not Valid Input";
+  }
+}
+
+function getToggleAnalogInput(bits) {
+  switch (bits) {
+    case 0b00:
       return "disabled";
-    case 0x01:
+    case 0b01:
       return "collected successfully";
-    case 0x10:
+    case 0b10:
       return "collect failed";
     default:
       return "Not Valid Input";
@@ -157,6 +244,9 @@ module.exports = {
   getToggleDigitalOutput,
   getDigitalOutputStatus,
   getToggleDigitalInput,
-  getAnalogInputStatus,
+  getToggleAnalogInput,
+  getDigitalInput,
+  getDigitalInputStatus,
+  getDigitalInputMode,
   decode,
 };
