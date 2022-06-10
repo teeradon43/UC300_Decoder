@@ -75,12 +75,12 @@ test("decode case 1", () => {
   expect(output.di_status.DI2).toBe("disabled");
   expect(output.di_status.DI3).toBe("disabled");
   expect(output.di_status.DI4).toBe("disabled");
-  // expect(output.ai_status.i4_20mA_1).toBe("disabled");
-  // expect(output.ai_status.i4_20mA_2).toBe("disabled");
-  // expect(output.ai_status.i0_10V_1).toBe("disabled");
-  // expect(output.ai_status.i0_10V_2).toBe("disabled");
-  // expect(output.ai_status.iPT100_1).toBe("disabled");
-  // expect(output.ai_status.iPT100_2).toBe("disabled");
+  expect(output.ai_status.i4_20mA_1).toBe("disabled");
+  expect(output.ai_status.i4_20mA_2).toBe("disabled");
+  expect(output.ai_status.i0_10V_1).toBe("disabled");
+  expect(output.ai_status.i0_10V_2).toBe("disabled");
+  expect(output.ai_status.iPT100_1).toBe("disabled");
+  expect(output.ai_status.iPT100_2).toBe("disabled");
 });
 
 test("decode case 2", () => {
@@ -101,12 +101,16 @@ test("decode case 2", () => {
   expect(output.di_value.DI3).toBe("low");
   expect(output.di_counter.DI2).toBe(0);
   expect(output.di_counter.DI4).toBe(21);
-  // expect(output.ai_status.i4_20mA_1).toBe("disabled");
-  // expect(output.ai_status.i4_20mA_2).toBe("collected successfully");
-  // expect(output.ai_status.i0_10V_1).toBe("disabled");
-  // expect(output.ai_status.i0_10V_2).toBe("disabled");
-  // expect(output.ai_status.iPT100_1).toBe("collected successfully");
-  // expect(output.ai_status.iPT100_2).toBe("collected successfully");
+  console.log(output.ai_status);
+  expect(output.ai_status.i4_20mA_1).toBe("collected successfully");
+  expect(output.ai_status.i4_20mA_2).toBe("disabled");
+  expect(output.ai_status.i0_10V_1).toBe("disabled");
+  expect(output.ai_status.i0_10V_2).toBe("disabled");
+  expect(output.ai_status.iPT100_1).toBe("collected successfully");
+  expect(output.ai_status.iPT100_2).toBe("collected successfully");
+  // expect(output.ai_value.i4_20mA_1).toBe(0);
+  // expect(output.ai_value.iPT100_1).toBe(27.2);
+  // expect(output.ai_value.iPT100_2).toBe(0);
 });
 
 test("decode case 3", () => {

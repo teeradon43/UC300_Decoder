@@ -31,13 +31,6 @@ const DIGITAL_INPUT_TEMPLATE = {
   DI4: "",
 };
 
-const DIGITAL_INPUT_VALUE_TEMPLATE = {
-  DI1: "",
-  DI2: "",
-  DI3: "",
-  DI4: "",
-};
-
 function byte2hex(byte) {
   return parseInt(byte).toString(16);
 }
@@ -101,11 +94,17 @@ function decode(bytes) {
       bytes.slice(DIGI_COUNTER_INDEX, DIGI_COUNTER_INDEX + 4 * counter.length),
       counter
     );
+    additionalByte += 4 * counter.length - 1;
 
     output.di_counter = di_counter;
   }
 
   // analog input
+  let toggleAnalogInputByte = TOGGLE_ANALOG_INPUT + additionalByte;
+  let ai_status = getToggleAnalogStatus(
+    bytes.slice(toggleAnalogInputByte, toggleAnalogInputByte + 2)
+  );
+  output.ai_status = ai_status;
 
   // modbus
   return output;
@@ -119,38 +118,38 @@ function readUInt8LE(bytes) {
 }
 
 function readInt8LE(bytes) {
-  var ref = readUInt8LE(bytes);
+  let ref = readUInt8LE(bytes);
   return ref > 0x7f ? ref - 0x100 : ref;
 }
 
 function readUInt16LE(bytes) {
-  var value = (bytes[1] << 8) + bytes[0];
+  let value = (bytes[1] << 8) + bytes[0];
   return value & 0xffff;
 }
 
 function readInt16LE(bytes) {
-  var ref = readUInt16LE(bytes);
+  let ref = readUInt16LE(bytes);
   return ref > 0x7fff ? ref - 0x10000 : ref;
 }
 
 function readUInt32LE(bytes) {
-  var value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
+  let value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
   return value & 0xffffffff;
 }
 
 function readInt32LE(bytes) {
-  var ref = readUInt32LE(bytes);
+  let ref = readUInt32LE(bytes);
   return ref > 0x7fffffff ? ref - 0x100000000 : ref;
 }
 
 function readFloatLE(bytes) {
   // JavaScript bitwise operators yield a 32 bits integer, not a float.
   // Assume LSB (least significant byte first).
-  var bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
-  var sign = bits >>> 31 === 0 ? 1.0 : -1.0;
-  var e = (bits >>> 23) & 0xff;
-  var m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
-  var f = sign * m * Math.pow(2, e - 150);
+  let bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
+  let sign = bits >>> 31 === 0 ? 1.0 : -1.0;
+  let e = (bits >>> 23) & 0xff;
+  let m = e === 0 ? (bits & 0x7fffff) << 1 : (bits & 0x7fffff) | 0x800000;
+  let f = sign * m * Math.pow(2, e - 150);
   return f;
 }
 
@@ -202,10 +201,17 @@ function getDigitalInputMode(bits) {
   }
 }
 
+const DIGITAL_INPUT_VALUE_TEMPLATE = {
+  DI1: "",
+  DI2: "",
+  DI3: "",
+  DI4: "",
+};
+
 function getToggleDigitalInput(byte) {
-  var di_input = { ...DIGITAL_INPUT_TEMPLATE };
-  var input = [];
-  var counter = [];
+  let di_input = { ...DIGITAL_INPUT_TEMPLATE };
+  let input = [];
+  let counter = [];
   for (let i = 0; i < 4; i++) {
     let result = getDigitalInputMode((byte >> (2 * i)) & 0b11);
     di_input[`DI${i + 1}`] = result;
@@ -219,7 +225,7 @@ function getToggleDigitalInput(byte) {
 }
 
 function getDigitalInput(byte) {
-  var di_value = { ...DIGITAL_INPUT_VALUE_TEMPLATE };
+  let di_value = { ...DIGITAL_INPUT_VALUE_TEMPLATE };
   if (byte > 0x0f) return "Not Valid Input";
   for (let i = 0; i < 4; i++) {
     di_value[`DI${i + 1}`] = getDigitalInputStatus((byte >> i) & 1);
@@ -239,7 +245,7 @@ function getDigitalInputStatus(bits) {
 }
 
 function getDigitalCounter(bytes, counter) {
-  var di_counter = {};
+  let di_counter = {};
   counter.forEach((di, index) => {
     di_counter[`DI${di}`] = readUInt32LE(bytes.slice(index * 4, index * 4 + 4));
   });
@@ -257,6 +263,40 @@ function getToggleAnalogInput(bits) {
     default:
       return "Not Valid Input";
   }
+}
+const ANALOG_INPUT_STATUS_TEMPLATE = {
+  i4_20mA_1: "",
+  i4_20mA_2: "",
+  i0_10V_1: "",
+  i0_10V_2: "",
+  iPT100_1: "",
+  iPT100_2: "",
+};
+// console.log(getToggleAnalogStatus([0x55, 0x05]));
+function getToggleAnalogStatus(bytes) {
+  let ai_status = { ...ANALOG_INPUT_STATUS_TEMPLATE };
+  let input = [];
+  let byte1 = bytes[0];
+  let byte2 = bytes[1];
+  Object.keys(ai_status).forEach((keys, index) => {
+    // console.log(interface);
+    if (index < 4) {
+      ai_status[`${keys}`] = getToggleAnalogInput((byte1 >> (index * 2)) & 0x3);
+    } else {
+      ai_status[`${keys}`] = getToggleAnalogInput(
+        (byte2 >> ((index - 4) * 2)) & 0x3
+      );
+    }
+    // ai_status[`${interface}`] = getToggleAnalogInput(byte)
+  });
+  // ai_status.i4_20mA_1 = getToggleAnalogInput(byte1 & 0x3);
+  // ai_status.i4_20mA_2 = getToggleAnalogInput((byte1 >> 2) & 0x3);
+  // ai_status.i0_10V_1 = getToggleAnalogInput((byte1 >> 4) & 0x3);
+  // ai_status.i0_10V_2 = getToggleAnalogInput((byte1 >> 6) & 0x3);
+  // ai_status.iPT100_1 = getToggleAnalogInput(byte2 & 0x3);
+  // ai_status.iPT100_2 = getToggleAnalogInput((byte2 >> 2) & 0x3);
+
+  return ai_status;
 }
 
 module.exports = {
