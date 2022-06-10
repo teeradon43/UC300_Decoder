@@ -6,6 +6,7 @@ const {
   getToggleAnalogInput,
   getDigitalInputStatus,
   getDigitalInputMode,
+  getDigitalCounter,
   decode,
 } = require("./uc300");
 
@@ -51,6 +52,15 @@ test("getToggleAnalogInput", () => {
   expect(getToggleAnalogInput(0b11)).toBe("Not Valid Input");
 });
 
+test("getDigitalCounter", () => {
+  const rawData = "0000000015000000";
+  const bytes = Buffer.from(rawData, "hex");
+  const counter = [2, 4];
+  output = getDigitalCounter(bytes, counter);
+  expect(output.DI2).toBe(0);
+  expect(output.DI4).toBe(21);
+});
+
 test("decode case 1", () => {
   const rawData = "7EF40F000A7A80576214000000007E";
   const bytes = Buffer.from(rawData, "hex");
@@ -75,6 +85,8 @@ test("decode case 2", () => {
   // expect(output.timestamp);
   // expect(output.signal_strength).toBe(20);
   expect(output.do_status).toBe("DO1 open, DO2 closed");
+  expect(output.di_counter.DI2).toBe(0);
+  expect(output.di_counter.DI4).toBe(21);
 });
 
 test("decode case 3", () => {

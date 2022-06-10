@@ -56,7 +56,7 @@ function decode(bytes) {
     TOGGLE_ANALOG_INPUT,
   } = BYTE_INDEX;
 
-  var ADDITIONAL_BYTE = 0;
+  var additionalByte = 0;
 
   // static
   output.data_type = byte2hex(bytes[DATA_TYPE]);
@@ -71,25 +71,38 @@ function decode(bytes) {
   output.signal_strength = readInt8LE(bytes[SIGNAL]);
 
   // digital output
-  output.do_status = getToggleDigitalOutput(bytes[TOGGLE_DIGITAL_OUTPUT]);
-  if (bytes[TOGGLE_DIGITAL_OUTPUT] > 0) {
-    ADDITIONAL_BYTE++;
-    var DIGI_OUTPUT = TOGGLE_DIGITAL_OUTPUT + ADDITIONAL_BYTE;
-    output.do_status = getDigitalOutputStatus(bytes[DIGI_OUTPUT]);
+
+  let toggleDigitalOutputByte = bytes[TOGGLE_DIGITAL_OUTPUT];
+
+  output.do_status = getToggleDigitalOutput(toggleDigitalOutputByte);
+  if (toggleDigitalOutputByte > 0) {
+    additionalByte++;
+    let digiOutput = TOGGLE_DIGITAL_OUTPUT + additionalByte;
+
+    output.do_status = getDigitalOutputStatus(bytes[digiOutput]);
   }
 
   // digital input
-  var TOG_DIGI_INPUT = TOGGLE_DIGITAL_INPUT + ADDITIONAL_BYTE;
+  var toggleDigitalInputByte = TOGGLE_DIGITAL_INPUT + additionalByte;
   var [di_status, input, counter] = getToggleDigitalInput(
-    bytes[TOG_DIGI_INPUT]
+    bytes[toggleDigitalInputByte]
   );
   output.di_status = di_status;
+
   if (input.length > 0) {
-    ADDITIONAL_BYTE++;
-    var DIGI_INPUT = TOGGLE_DIGITAL_INPUT + ADDITIONAL_BYTE;
-    output.di_status = getDigitalInput(bytes[DIGI_INPUT]);
+    additionalByte++;
+    var DIGI_INPUT_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
+    output.di_status = getDigitalInput(bytes[DIGI_INPUT_INDEX]);
   }
   if (counter.length > 0) {
+    additionalByte++;
+    var DIGI_COUNTER_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
+    var di_counter = getDigitalCounter(
+      bytes.slice(DIGI_COUNTER_INDEX, DIGI_COUNTER_INDEX + 4 * counter.length),
+      counter
+    );
+
+    output.di_counter = di_counter;
   }
 
   // analog input
@@ -97,8 +110,6 @@ function decode(bytes) {
   // modbus
   return output;
 }
-
-console.log(decode("7EF40F000A7A80576214000000007E").di_status);
 
 /* ******************************************
  * bytes to number
@@ -227,6 +238,14 @@ function getDigitalInputStatus(bits) {
   }
 }
 
+function getDigitalCounter(bytes, counter) {
+  var di_counter = {};
+  counter.forEach((di, index) => {
+    di_counter[`DI${di}`] = readUInt32LE(bytes.slice(index * 4, index * 4 + 4));
+  });
+  return di_counter;
+}
+
 function getToggleAnalogInput(bits) {
   switch (bits) {
     case 0b00:
@@ -248,5 +267,6 @@ module.exports = {
   getDigitalInput,
   getDigitalInputStatus,
   getDigitalInputMode,
+  getDigitalCounter,
   decode,
 };
