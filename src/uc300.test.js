@@ -70,17 +70,17 @@ test("decode case 1", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(20);
-  expect(output.do_status).toBe("DO1 and DO2 disabled");
-  expect(output.di_status.DI1).toBe("disabled");
-  expect(output.di_status.DI2).toBe("disabled");
-  expect(output.di_status.DI3).toBe("disabled");
-  expect(output.di_status.DI4).toBe("disabled");
-  expect(output.ai_status.i4_20mA_1).toBe("disabled");
-  expect(output.ai_status.i4_20mA_2).toBe("disabled");
-  expect(output.ai_status.i0_10V_1).toBe("disabled");
-  expect(output.ai_status.i0_10V_2).toBe("disabled");
-  expect(output.ai_status.iPT100_1).toBe("disabled");
-  expect(output.ai_status.iPT100_2).toBe("disabled");
+  expect(output.toggles_of_digital_outputs).toBe("DO1 and DO2 disabled");
+  expect(output.toggles_of_digital_inputs.DI1).toBe("disabled");
+  expect(output.toggles_of_digital_inputs.DI2).toBe("disabled");
+  expect(output.toggles_of_digital_inputs.DI3).toBe("disabled");
+  expect(output.toggles_of_digital_inputs.DI4).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.i4_20mA_2).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.i0_10V_1).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.i0_10V_2).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.iPT100_1).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.iPT100_2).toBe("disabled");
 });
 
 test("decode case 2", () => {
@@ -93,24 +93,34 @@ test("decode case 2", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(17);
-  expect(output.do_status).toBe("DO1 open, DO2 closed");
-  expect(output.di_status.DI1).toBe("disabled");
-  expect(output.di_status.DI2).toBe("Counter mode stop counting");
-  expect(output.di_status.DI3).toBe("Digital Input Mode");
-  expect(output.di_status.DI4).toBe("Counter mode pulse-start counting");
-  expect(output.di_value.DI3).toBe("low");
+  expect(output.toggles_of_digital_outputs).toBe("DO1 open, DO2 closed");
+  expect(output.toggles_of_digital_inputs.DI1).toBe("disabled");
+  expect(output.toggles_of_digital_inputs.DI2).toBe(
+    "Counter mode stop counting"
+  );
+  expect(output.toggles_of_digital_inputs.DI3).toBe("Digital Input Mode");
+  expect(output.toggles_of_digital_inputs.DI4).toBe(
+    "Counter mode pulse-start counting"
+  );
+  expect(output.digital_input_status.DI3).toBe("low");
   expect(output.di_counter.DI2).toBe(0);
   expect(output.di_counter.DI4).toBe(21);
-  console.log(output.ai_status);
-  expect(output.ai_status.i4_20mA_1).toBe("collected successfully");
-  expect(output.ai_status.i4_20mA_2).toBe("disabled");
-  expect(output.ai_status.i0_10V_1).toBe("disabled");
-  expect(output.ai_status.i0_10V_2).toBe("disabled");
-  expect(output.ai_status.iPT100_1).toBe("collected successfully");
-  expect(output.ai_status.iPT100_2).toBe("collected successfully");
-  // expect(output.ai_value.i4_20mA_1).toBe(0);
-  // expect(output.ai_value.iPT100_1).toBe(27.2);
-  // expect(output.ai_value.iPT100_2).toBe(0);
+  expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe(
+    "collected successfully"
+  );
+  expect(output.toggles_of_analog_inputs.i4_20mA_2).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.i0_10V_1).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.i0_10V_2).toBe("disabled");
+  expect(output.toggles_of_analog_inputs.iPT100_1).toBe(
+    "collected successfully"
+  );
+  expect(output.toggles_of_analog_inputs.iPT100_2).toBe(
+    "collected successfully"
+  );
+  expect(output.analog_input_value.i4_20mA_1).toBe(0);
+  expect(output.analog_input_value.iPT100_1).toBe(27.2);
+  expect(output.analog_input_value.iPT100_2).toBe(0);
+  expect(output.modbus);
 });
 
 test("decode case 3", () => {
@@ -118,9 +128,28 @@ test("decode case 3", () => {
   const bytes = Buffer.from(rawData, "hex");
   output = decode(bytes);
   expect(output.data_type).toBe("f4");
-  // expect(output.packet_length).toBe(15);
-  // expect(output.packet_version).toBe(10);
-  // expect(output.timestamp);
-  // expect(output.signal_strength).toBe(20);
-  expect(output.do_status).toBe("DO1 and DO2 disabled");
+  expect(output.packet_length).toBe(24);
+  expect(output.packet_version).toBe(10);
+  expect(output.timestamp);
+  expect(output.signal_strength).toBe(17);
+  expect(output.toggles_of_digital_outputs).toBe("DO1 and DO2 disabled");
+  tog_di = output.toggles_of_digital_inputs;
+  expect(tog_di.DI1).toBe("disabled");
+  expect(tog_di.DI2).toBe("disabled");
+  expect(tog_di.DI3).toBe("disabled");
+  expect(tog_di.DI4).toBe("disabled");
+  tog_ai = output.toggles_of_analog_inputs;
+  expect(tog_ai.i4_20mA_1).toBe("disabled");
+  expect(tog_ai.i4_20mA_2).toBe("disabled");
+  expect(tog_ai.i0_10V_1).toBe("disabled");
+  expect(tog_ai.i0_10V_2).toBe("disabled");
+  expect(tog_ai.iPT100_1).toBe("disabled");
+  expect(tog_ai.iPT100_2).toBe("disabled");
+  modbus = output.modbus;
+  expect(modbus[0].channel_id).toBe(1);
+  expect(modbus[0].status).toBe("collected successfully");
+  expect(modbus[0].data).toStrictEqual([21, 32]);
+  expect(modbus[1].channel_id).toBe(2);
+  expect(modbus[1].status).toBe("collected failed");
+  expect(modbus[1].data).toStrictEqual([0]);
 });

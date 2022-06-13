@@ -9,18 +9,27 @@ const BYTE_INDEX = {
   TOGGLE_ANALOG_INPUT: 12,
 };
 
+const BYTE_LENGTH = {
+  PACKET_LENGTH: 2,
+  TIMESTAMP_LENGTH: 4,
+  TOGGLE_ANALOG_INPUT_LENGTH: 2,
+  INT16_LENGTH: 2,
+  INT32_LENGTH: 4,
+  FLOAT_LENGTH: 4,
+};
+
 const OUTPUT_TEMPLATE = {
   data_type: "",
   packet_length: "",
   packet_version: "",
   timestamp: "",
   signal_strength: "",
-  do_status: {},
-  di_status: {},
-  di_value: {},
+  toggles_of_digital_outputs: {},
+  toggles_of_digital_inputs: {},
+  digital_input_status: {},
   di_counter: {},
-  ai_status: {},
-  ai_value: {},
+  toggles_of_analog_inputs: {},
+  analog_input_value: {},
   modbus: {},
 };
 
@@ -38,75 +47,120 @@ function byte2hex(byte) {
 function decode(bytes) {
   let output = { ...OUTPUT_TEMPLATE };
 
+  // const {
+  //   DATA_TYPE,
+  //   PACKET_VERSION,
+  //   SIGNAL,
+  //   TIMESTAMP,
+  //   TOGGLE_DIGITAL_OUTPUT,
+  //   TOGGLE_DIGITAL_INPUT,
+  //   TOGGLE_ANALOG_INPUT,
+  // } = BYTE_INDEX;
+
   const {
-    DATA_TYPE,
     PACKET_LENGTH,
-    PACKET_VERSION,
-    TIMESTAMP,
-    SIGNAL,
-    TOGGLE_DIGITAL_OUTPUT,
-    TOGGLE_DIGITAL_INPUT,
-    TOGGLE_ANALOG_INPUT,
-  } = BYTE_INDEX;
+    TIMESTAMP_LENGTH,
+    TOGGLE_ANALOG_INPUT_LENGTH,
+    INT16_LENGTH,
+    INT32_LENGTH,
+    FLOAT_LENGTH,
+  } = BYTE_LENGTH;
 
-  let additionalByte = 0;
+  let reader = Reader(bytes);
+  reader.skip(1); // skip start byte
 
-  // static
-  output.data_type = byte2hex(bytes[DATA_TYPE]);
-  output.packet_length = readInt16LE(
-    bytes.slice(PACKET_LENGTH, PACKET_LENGTH + 2)
-  );
-  output.packet_version = readInt8LE(bytes[PACKET_VERSION]);
+  // get data_type
+  output.data_type = byte2hex(reader.read(1)[0]);
+
+  output.packet_length = readInt16LE(reader.read(PACKET_LENGTH));
+
+  // get version
+  output.packet_version = readInt8LE(reader.read(1)[0]);
+
+  // get timeStamp
   let timeStamp = new Date(
-    readUInt32LE(bytes.slice(TIMESTAMP, TIMESTAMP + 4)) * 1000
+    readUInt32LE(reader.read(TIMESTAMP_LENGTH)) * 1000
   ).toString();
   output.timestamp = timeStamp;
-  output.signal_strength = readInt8LE(bytes[SIGNAL]);
+
+  // get signal strength
+  output.signal_strength = readInt8LE(reader.read(1)[0]);
 
   // digital output
+  let toggleDigitalOutputByte = reader.read(1)[0];
 
-  let toggleDigitalOutputByte = bytes[TOGGLE_DIGITAL_OUTPUT];
-
-  output.do_status = getToggleDigitalOutput(toggleDigitalOutputByte);
+  output.toggles_of_digital_outputs = getToggleDigitalOutput(
+    toggleDigitalOutputByte
+  );
   if (toggleDigitalOutputByte > 0) {
-    additionalByte++;
-    let digiOutput = TOGGLE_DIGITAL_OUTPUT + additionalByte;
-
-    output.do_status = getDigitalOutputStatus(bytes[digiOutput]);
+    output.toggles_of_digital_outputs = getDigitalOutputStatus(
+      reader.read(1)[0]
+    );
   }
 
   // digital input
-  let toggleDigitalInputByte = TOGGLE_DIGITAL_INPUT + additionalByte;
-  let [di_status, input, counter] = getToggleDigitalInput(
-    bytes[toggleDigitalInputByte]
+  let [toggles_of_digital_inputs, input, counter] = getToggleDigitalInput(
+    reader.read(1)[0]
   );
-  output.di_status = di_status;
+  output.toggles_of_digital_inputs = toggles_of_digital_inputs;
 
   if (input.length > 0) {
-    additionalByte++;
-    let DIGI_INPUT_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
-    output.di_value = getDigitalInput(bytes[DIGI_INPUT_INDEX]);
+    output.digital_input_status = getDigitalInput(reader.read(1)[0]);
   }
   if (counter.length > 0) {
-    additionalByte++;
-    let DIGI_COUNTER_INDEX = TOGGLE_DIGITAL_INPUT + additionalByte;
     let di_counter = getDigitalCounter(
-      bytes.slice(DIGI_COUNTER_INDEX, DIGI_COUNTER_INDEX + 4 * counter.length),
+      reader.read(INT32_LENGTH * counter.length),
       counter
     );
-    additionalByte += 4 * counter.length - 1;
-
     output.di_counter = di_counter;
   }
 
   // analog input
-  let toggleAnalogInputByte = TOGGLE_ANALOG_INPUT + additionalByte;
-  let ai_status = getToggleAnalogStatus(
-    bytes.slice(toggleAnalogInputByte, toggleAnalogInputByte + 2)
+  let [toggles_of_analog_inputs, analogInput] = getToggleAnalogStatus(
+    reader.read(TOGGLE_ANALOG_INPUT_LENGTH)
   );
-  output.ai_status = ai_status;
+  if (analogInput.length > 0) {
+    let analog_input_value = getAnalogInput(
+      reader.read(FLOAT_LENGTH * analogInput.length),
+      analogInput
+    );
+    output.analog_input_value = analog_input_value;
+  }
+  output.toggles_of_analog_inputs = toggles_of_analog_inputs;
 
   // modbus
+  let modbus = [];
+  while (reader.hasLeft()) {
+    let [channelId, dataType] = getModbusChannelDataType(reader.read(1)[0]);
+    let [sign, decimal, status, quantity] = getModbusRegisterSetting(
+      reader.read(1)[0]
+    );
+    let data = [];
+    for (let i = 0; i < quantity; i++) {
+      if (dataType.includes("float")) {
+        // data = readFloat
+        data.push(readFloatLE(reader.read(FLOAT_LENGTH)));
+      } else if (dataType.includes("16")) {
+        // data = readInt16
+        data.push(readInt16LE(reader.read(INT16_LENGTH)));
+      } else if (dataType.includes("32")) {
+        // data = readInt32
+        data = readInt32LE(reader.read(INT32_LENGTH));
+      } else if (dataType.includes("Coil") || dataType.includes("Discrete")) {
+        // ddata = reader.read(1)[0]
+        data.push(reader.read(1)[0]);
+      }
+    }
+    modbus.push({
+      channel_id: channelId,
+      data_type: dataType,
+      status: status,
+      quantity: quantity,
+      data: data,
+    });
+  }
+  output.modbus = modbus;
+
   return output;
 }
 
@@ -225,12 +279,12 @@ function getToggleDigitalInput(byte) {
 }
 
 function getDigitalInput(byte) {
-  let di_value = { ...DIGITAL_INPUT_VALUE_TEMPLATE };
+  let digital_input_status = { ...DIGITAL_INPUT_VALUE_TEMPLATE };
   if (byte > 0x0f) return "Not Valid Input";
   for (let i = 0; i < 4; i++) {
-    di_value[`DI${i + 1}`] = getDigitalInputStatus((byte >> i) & 1);
+    digital_input_status[`DI${i + 1}`] = getDigitalInputStatus((byte >> i) & 1);
   }
-  return di_value;
+  return digital_input_status;
 }
 
 function getDigitalInputStatus(bits) {
@@ -272,32 +326,106 @@ const ANALOG_INPUT_STATUS_TEMPLATE = {
   iPT100_1: "",
   iPT100_2: "",
 };
-// console.log(getToggleAnalogStatus([0x55, 0x05]));
+
 function getToggleAnalogStatus(bytes) {
-  let ai_status = { ...ANALOG_INPUT_STATUS_TEMPLATE };
-  let input = [];
+  let toggles_of_analog_inputs = { ...ANALOG_INPUT_STATUS_TEMPLATE };
+  let analogInput = [];
   let byte1 = bytes[0];
   let byte2 = bytes[1];
-  Object.keys(ai_status).forEach((keys, index) => {
+  Object.keys(toggles_of_analog_inputs).forEach((keys, index) => {
     // console.log(interface);
     if (index < 4) {
-      ai_status[`${keys}`] = getToggleAnalogInput((byte1 >> (index * 2)) & 0x3);
+      toggles_of_analog_inputs[`${keys}`] = getToggleAnalogInput(
+        (byte1 >> (index * 2)) & 0x3
+      );
     } else {
-      ai_status[`${keys}`] = getToggleAnalogInput(
+      toggles_of_analog_inputs[`${keys}`] = getToggleAnalogInput(
         (byte2 >> ((index - 4) * 2)) & 0x3
       );
     }
-    // ai_status[`${interface}`] = getToggleAnalogInput(byte)
+    if (toggles_of_analog_inputs[`${keys}`].includes("collected")) {
+      analogInput.push(`${keys}`);
+    }
   });
-  // ai_status.i4_20mA_1 = getToggleAnalogInput(byte1 & 0x3);
-  // ai_status.i4_20mA_2 = getToggleAnalogInput((byte1 >> 2) & 0x3);
-  // ai_status.i0_10V_1 = getToggleAnalogInput((byte1 >> 4) & 0x3);
-  // ai_status.i0_10V_2 = getToggleAnalogInput((byte1 >> 6) & 0x3);
-  // ai_status.iPT100_1 = getToggleAnalogInput(byte2 & 0x3);
-  // ai_status.iPT100_2 = getToggleAnalogInput((byte2 >> 2) & 0x3);
 
-  return ai_status;
+  return [toggles_of_analog_inputs, analogInput];
 }
+
+function getAnalogInput(bytes, analogInput) {
+  let analog_input_value = {};
+  let reader = Reader(bytes);
+  const { FLOAT_LENGTH } = BYTE_LENGTH;
+  analogInput.forEach((ai, index) => {
+    analog_input_value[`${ai}`] =
+      Math.round(readFloatLE(reader.read(FLOAT_LENGTH)) * 100, 2) / 100;
+  });
+  return analog_input_value;
+}
+
+const DATA_TYPE_TEMPLATE = {
+  0: "Coil",
+  1: "Discrete",
+  2: "Input16",
+  3: "Hold16",
+  4: "Hold32",
+  5: "Hold_float",
+  6: "Input32",
+  7: "Input_float",
+  8: "Input_int32_with upper 16 bits",
+  9: "Input_int32_with lower 16 bits",
+  10: "Hold_int32_with upper 16 bits",
+  11: "Hold_int32_with lower 16 bits",
+};
+
+function getModbusChannelDataType(byte) {
+  let DataType = { ...DATA_TYPE_TEMPLATE };
+  let channelId = ((byte >> 4) & 0xf) + 1;
+  let dataTypeBit = byte & 0xf;
+  let dataType = DataType[dataTypeBit];
+  return [channelId, dataType];
+}
+
+function getModbusRegisterSetting(byte) {
+  let sign = (byte >> 7) & 1;
+  let decimal = (byte >> 4) & 0b111;
+  let status =
+    ((byte >> 3) & 1) == 0 ? "collected failed" : "collected successfully";
+  let quantity = byte & 0b111;
+  return [sign, decimal, status, quantity];
+}
+
+let Reader = (arr) => {
+  let i = 0;
+  const read = (size) => {
+    const result = arr.slice(i, i + size);
+    i += size;
+    return result;
+  };
+
+  const skip = (size) => {
+    i += size;
+  };
+
+  const reset = () => {
+    i = 0;
+  };
+
+  const hasLeft = () => {
+    return i < arr.length - 1;
+  };
+
+  const index = () => {
+    return i;
+  };
+
+  return {
+    read,
+    skip,
+    reset,
+    hasLeft,
+    index,
+  };
+};
 
 module.exports = {
   getToggleDigitalOutput,
