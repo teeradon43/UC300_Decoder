@@ -18,7 +18,7 @@ Optimizing Task :
 - [ ] Modbus
 - [ ] Test Cases :
   - [x] Case 1 (No Input/Output, No Modbus)
-  - [ ] Case 2 (Have Input/Output, No Modbus)
+  - [x] Case 2 (Have Input/Output, No Modbus)
   - [x] Case 3 (No Input/Output, Have Modbus)
   - [ ] Case 18
   - [ ] Case 25
