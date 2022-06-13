@@ -10,7 +10,18 @@ Available
 Working:
 - Optimizing
 
-Upcoming:
-- Check Secure
-  - Packet Length
-  - Start/Stop byte
+Optimizing Task :
+
+- [ ] Toggle of Digital Outputs / Digital Output Statuts
+- [ ] Toggle of Digital Inputs / Digital Input Status / Counter Value
+- [ ] Toggle of Analog Inputs / Analog Input Value
+- [ ] Modbus
+- [ ] Test Cases :
+  - [x] Case 1 (No Input/Output, No Modbus)
+  - [ ] Case 2 (Have Input/Output, No Modbus)
+  - [x] Case 3 (No Input/Output, Have Modbus)
+  - [ ] Case 18
+  - [ ] Case 25
+  - [ ] Case 126
+  - [ ] Case 127
+  - [ ] Case 134
