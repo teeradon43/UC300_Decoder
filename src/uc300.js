@@ -344,7 +344,6 @@ function getToggleAnalogStatus(bytes) {
   }
   // setAnalog for Byte2 (PT100)
   for (let i = 0; i < 2; i++) {
-    console.log((byte2 >> (i * 2)) & 0x3);
     toggles_of_analog_inputs[i + 4].toggle = getToggleAnalogInput(
       (byte2 >> (i * 2)) & 0x3
     );
@@ -590,7 +589,7 @@ function decode(bytes) {
 
   // modbus
   let modbus = [];
-  while (reader.hasNext() && isStopByte(reader.index(), reader.getSize())) {
+  while (reader.hasNext() && !isStopByte(reader.index(), reader.getSize())) {
     let [channelId, dataType] = getModbusChannelDataType(reader.read(1)[0]);
     let [sign, decimal, status, quantity] = getModbusRegisterSetting(
       reader.read(1)[0]
