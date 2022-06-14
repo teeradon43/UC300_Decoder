@@ -22,13 +22,6 @@ const OUTPUT_TEMPLATE = {
   modbus: {},
 };
 
-const DIGITAL_INPUT_TEMPLATE = {
-  DI1: "",
-  DI2: "",
-  DI3: "",
-  DI4: "",
-};
-
 function byte2hex(byte) {
   return parseInt(byte).toString(16);
 }
@@ -95,6 +88,15 @@ function getParser(dataType) {
   }
 }
 
+function hasDigitalOutputStatuses(toggles) {
+  for (const { toggle } of toggles) {
+    if (toggle == "enable") {
+      return true;
+    }
+  }
+  return false;
+}
+
 function decode(bytes) {
   let output = { ...OUTPUT_TEMPLATE };
 
@@ -129,30 +131,28 @@ function decode(bytes) {
 
   // digital output
   let toggleDigitalOutputByte = reader.read(1)[0];
+  let digitalOutputToggle = getDigitalOutputToggle(toggleDigitalOutputByte);
+  output.digital_output_toggles = digitalOutputToggle;
 
-  output.toggles_of_digital_outputs = getToggleDigitalOutput(
-    toggleDigitalOutputByte
-  );
-  if (toggleDigitalOutputByte > 0) {
-    output.toggles_of_digital_outputs = getDigitalOutputStatus(
+  if (hasDigitalOutputStatuses(digitalOutputToggle)) {
+    output.digital_output_statuses = getDigitalOutputStatuses(
       reader.read(1)[0]
     );
   }
 
   // digital input
-  let [toggles_of_digital_inputs, input, counter] = getToggleDigitalInput(
-    reader.read(1)[0]
-  );
-  output.toggles_of_digital_inputs = toggles_of_digital_inputs;
+  let toggleDigitalInputByte = reader.read(1)[0];
+  let digitalInputToggle = getDigitalInputToggles(toggleDigitalInputByte);
+  output.toggles_of_digital_inputs = digitalInputToggle;
 
-  if (input.length > 0) {
-    output.digital_input_status = getDigitalInput(reader.read(1)[0]);
+  if (hasInputMode(digitalInputToggle)) {
+    output.digital_input_statuses = getDigitalInput(reader.read(1)[0]);
   }
-  if (counter.length > 0) {
-    let di_counter = getDigitalCounter(
-      reader.read(INT32_LENGTH * counter.length),
-      counter
-    );
+  if (hasCounterMode(digitalInputToggle)) {
+    let counterToggleSize = getCounterToggleSize(digitalInputToggle);
+    console.log("counter Size", counterToggleSize);
+    let counterByte = reader.read(counterToggleSize);
+    let di_counter = getDigitalCounter(digitalInputToggle, counterByte);
     output.di_counter = di_counter;
   }
 
@@ -257,7 +257,7 @@ function getToggleDigitalOutput(byte) {
   }
 }
 
-function getDigitalOutputStatus(byte) {
+function getDigitalOutputStatuses(byte) {
   switch (byte) {
     case 0x00:
       return "DO1 and DO2 closed";
@@ -275,17 +275,28 @@ function getDigitalOutputStatus(byte) {
 function getDigitalInputMode(bits) {
   switch (bits) {
     case 0b00:
-      return "disabled";
+      return DISABLE;
     case 0b01:
-      return "Digital Input Mode";
+      return DIGITAL_INPUT_MODE;
     case 0b10:
-      return "Counter mode stop counting";
+      return COUNTER_STOP_COUNTING_MODE;
     case 0b11:
-      return "Counter mode pulse-start counting";
+      return COUNTER_START_COUNTING_MODE;
     default:
       return "Not Valid Input";
   }
 }
+const DISABLE = 0;
+const DIGITAL_INPUT_MODE = 1;
+const COUNTER_STOP_COUNTING_MODE = 2;
+const COUNTER_START_COUNTING_MODE = 3;
+
+const DIGITAL_INPUT_TEMPLATE = [
+  { name: "DI1", toggle: DISABLE },
+  { name: "DI2", toggle: DISABLE },
+  { name: "DI3", toggle: DISABLE },
+  { name: "DI4", toggle: DISABLE },
+];
 
 const DIGITAL_INPUT_VALUE_TEMPLATE = {
   DI1: "",
@@ -294,20 +305,13 @@ const DIGITAL_INPUT_VALUE_TEMPLATE = {
   DI4: "",
 };
 
-function getToggleDigitalInput(byte) {
-  let di_input = { ...DIGITAL_INPUT_TEMPLATE };
-  let input = [];
-  let counter = [];
-  for (let i = 0; i < 4; i++) {
-    let result = getDigitalInputMode((byte >> (2 * i)) & 0b11);
-    di_input[`DI${i + 1}`] = result;
-    if (result.includes("Input Mode")) {
-      input.push(i + 1);
-    } else if (result.includes("Counter")) {
-      counter.push(i + 1);
-    }
+function getDigitalInputToggles(byte) {
+  let di_toggle = [...DIGITAL_INPUT_TEMPLATE];
+  for (const toggle in di_toggle) {
+    let mode = getDigitalInputMode((byte >> (2 * toggle)) & 0b11);
+    di_toggle[toggle].toggle = mode;
   }
-  return [di_input, input, counter];
+  return di_toggle;
 }
 
 function getDigitalInput(byte) {
@@ -330,11 +334,67 @@ function getDigitalInputStatus(bits) {
   }
 }
 
-function getDigitalCounter(bytes, counter) {
-  let di_counter = {};
-  counter.forEach((di, index) => {
-    di_counter[`DI${di}`] = readUInt32LE(bytes.slice(index * 4, index * 4 + 4));
-  });
+function hasInputMode(inputToggles) {
+  for (const { toggle } of inputToggles) {
+    if (toggle == DIGITAL_INPUT_MODE) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasCounterMode(inputToggles) {
+  for (const { toggle } of inputToggles) {
+    if (toggle == COUNTER_START_COUNTING_MODE) {
+      return true;
+    } else if (toggle == COUNTER_STOP_COUNTING_MODE) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getCounterToggleSize(inputToggles) {
+  let byteSize = 0;
+  let { INT32_LENGTH } = BYTE_LENGTH;
+  for (const { toggle } of inputToggles) {
+    if (
+      toggle == COUNTER_START_COUNTING_MODE ||
+      toggle == COUNTER_STOP_COUNTING_MODE
+    ) {
+      byteSize += INT32_LENGTH;
+    }
+  }
+  return byteSize;
+}
+
+const DIGITAL_COUNTER_TEMPLATE = [
+  { name: "DI1", counter: null },
+  { name: "DI2", counter: null },
+  { name: "DI3", counter: null },
+  { name: "DI4", counter: null },
+];
+
+function getDigitalCounter(inputToggles, counterByte) {
+  let di_counter = [...DIGITAL_COUNTER_TEMPLATE];
+  let { INT32_LENGTH } = BYTE_LENGTH;
+  let counterIndex = 0;
+  for (const toggle in inputToggles) {
+    let mToggle = inputToggles[toggle].toggle;
+    if (mToggle == DISABLE || mToggle == DIGITAL_INPUT_MODE) {
+      continue;
+    } else if (
+      mToggle == COUNTER_STOP_COUNTING_MODE ||
+      mToggle == COUNTER_START_COUNTING_MODE
+    ) {
+      let val = readInt32LE(
+        counterByte.slice(counterIndex, counterIndex + INT32_LENGTH)
+      );
+      di_counter[toggle].counter = val;
+      counterIndex += INT32_LENGTH;
+    }
+  }
+  // console.log("DI_COUNTER", di_counter);
   return di_counter;
 }
 
@@ -464,15 +524,46 @@ let Reader = (arr) => {
   };
 };
 
+function getDigitalOutputToggle(byte) {
+  switch (byte) {
+    case 0x00:
+      return [
+        { name: "DO1", toggle: "disable" },
+        { name: "DO2", toggle: "disable" },
+      ];
+    case 0x01:
+      return [
+        { name: "DO1", toggle: "enable" },
+        { name: "DO2", toggle: "disable" },
+      ];
+    case 0x02:
+      return [
+        { name: "DO1", toggle: "disable" },
+        { name: "DO2", toggle: "enable" },
+      ];
+    case 0x03:
+      return [
+        { name: "DO1", toggle: "enable" },
+        { name: "DO2", toggle: "enable" },
+      ];
+    default:
+      return [
+        { name: "DO1", toggle: "Not Valid Input" },
+        { name: "DO2", toggle: "Not Valid Input" },
+      ];
+  }
+}
+
 module.exports = {
   getToggleDigitalOutput,
-  getDigitalOutputStatus,
-  getToggleDigitalInput,
+  getDigitalOutputStatuses,
+  getDigitalInputToggles,
   getToggleAnalogInput,
   getDigitalInput,
   getDigitalInputStatus,
   getDigitalInputMode,
   getDigitalCounter,
+  getDigitalOutputToggle,
   getDataSize,
   getParser,
   decode,
@@ -481,3 +572,14 @@ module.exports = {
   readInt32LE,
   readFloatLE,
 };
+
+const rawData =
+  "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
+const bytes = Buffer.from(rawData, "hex");
+output = decode(bytes);
+console.log(
+  "this one is ",
+  output.toggles_of_digital_inputs,
+  output.di_counter
+);
+// console.log(output);

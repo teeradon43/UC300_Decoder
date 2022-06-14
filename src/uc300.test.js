@@ -1,11 +1,12 @@
 const {
   getToggleDigitalOutput,
-  getDigitalOutputStatus,
+  getDigitalOutputStatuses,
   getDigitalInput,
   getToggleAnalogInput,
   getDigitalInputStatus,
   getDigitalInputMode,
   getDigitalCounter,
+  getDigitalOutputToggle,
   getDataSize,
   getParser,
   decode,
@@ -23,19 +24,20 @@ test("getToggleDigitalOutput", () => {
   expect(getToggleDigitalOutput("")).toBe("Not Valid Input");
 });
 
-test("getDigitalOutputStatus", () => {
-  expect(getDigitalOutputStatus(0x00)).toBe("DO1 and DO2 closed");
-  expect(getDigitalOutputStatus(0x01)).toBe("DO1 open, DO2 closed");
-  expect(getDigitalOutputStatus(0x02)).toBe("DO1 closed, DO2 open");
-  expect(getDigitalOutputStatus(0x03)).toBe("DO1 and DO2 open");
-  expect(getDigitalOutputStatus("")).toBe("Not Valid Input");
+test("getDigitalOutputStatuses", () => {
+  expect(getDigitalOutputStatuses(0x00)).toBe("DO1 and DO2 closed");
+  expect(getDigitalOutputStatuses(0x01)).toBe("DO1 open, DO2 closed");
+  expect(getDigitalOutputStatuses(0x02)).toBe("DO1 closed, DO2 open");
+  expect(getDigitalOutputStatuses(0x03)).toBe("DO1 and DO2 open");
+  expect(getDigitalOutputStatuses("")).toBe("Not Valid Input");
 });
 
 test("getDigitalInputMode", () => {
-  expect(getDigitalInputMode(0b00)).toBe("disabled");
-  expect(getDigitalInputMode(0b01)).toBe("Digital Input Mode");
-  expect(getDigitalInputMode(0b10)).toBe("Counter mode stop counting");
-  expect(getDigitalInputMode(0b11)).toBe("Counter mode pulse-start counting");
+  expect(getDigitalInputMode(0b00)).toBe(0);
+  expect(getDigitalInputMode(0b01)).toBe(1);
+  expect(getDigitalInputMode(0b10)).toBe(2);
+  expect(getDigitalInputMode(0b11)).toBe(3);
+  expect(getDigitalInputMode()).toBe("Not Valid Input");
 });
 
 test("getDigitalInput", () => {
@@ -58,12 +60,52 @@ test("getToggleAnalogInput", () => {
 });
 
 test("getDigitalCounter", () => {
+  const counterToggle = [
+    { name: "DI1", toggle: 0 },
+    { name: "DI2", toggle: 2 },
+    { name: "DI3", toggle: 1 },
+    { name: "DI4", toggle: 3 },
+  ];
   const rawData = "0000000015000000";
   const bytes = Buffer.from(rawData, "hex");
-  const counter = [2, 4];
-  output = getDigitalCounter(bytes, counter);
-  expect(output.DI2).toBe(0);
-  expect(output.DI4).toBe(21);
+  output = getDigitalCounter(counterToggle, bytes);
+  expect(output[0].counter).toBe(null);
+  expect(output[1].counter).toBe(0);
+  expect(output[2].counter).toBe(null);
+  expect(output[3].counter).toBe(21);
+});
+
+test("getDigitalOutputToggle", () => {
+  output = getDigitalOutputToggle(0x00);
+  expect(output[0].name).toBe("DO1");
+  expect(output[0].toggle).toBe("disable");
+  expect(output[1].name).toBe("DO2");
+  expect(output[1].toggle).toBe("disable");
+  output = getDigitalOutputToggle(0x01);
+  expect(output[0].name).toBe("DO1");
+  expect(output[0].toggle).toBe("enable");
+  expect(output[1].name).toBe("DO2");
+  expect(output[1].toggle).toBe("disable");
+  output = getDigitalOutputToggle(0x02);
+  expect(output[0].name).toBe("DO1");
+  expect(output[0].toggle).toBe("disable");
+  expect(output[1].name).toBe("DO2");
+  expect(output[1].toggle).toBe("enable");
+  output = getDigitalOutputToggle(0x03);
+  expect(output[0].name).toBe("DO1");
+  expect(output[0].toggle).toBe("enable");
+  expect(output[1].name).toBe("DO2");
+  expect(output[1].toggle).toBe("enable");
+  output = getDigitalOutputToggle(0x04);
+  expect(output[0].name).toBe("DO1");
+  expect(output[0].toggle).toBe("Not Valid Input");
+  expect(output[1].name).toBe("DO2");
+  expect(output[1].toggle).toBe("Not Valid Input");
+  output = getDigitalOutputToggle(0xff);
+  expect(output[0].name).toBe("DO1");
+  expect(output[0].toggle).toBe("Not Valid Input");
+  expect(output[1].name).toBe("DO2");
+  expect(output[1].toggle).toBe("Not Valid Input");
 });
 
 test("getDataSize", () => {
@@ -107,11 +149,14 @@ test("decode case 1", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(20);
-  expect(output.toggles_of_digital_outputs).toBe("DO1 and DO2 disabled");
-  expect(output.toggles_of_digital_inputs.DI1).toBe("disabled");
-  expect(output.toggles_of_digital_inputs.DI2).toBe("disabled");
-  expect(output.toggles_of_digital_inputs.DI3).toBe("disabled");
-  expect(output.toggles_of_digital_inputs.DI4).toBe("disabled");
+  expect(output.digital_output_toggles[0].name).toBe("DO1");
+  expect(output.digital_output_toggles[0].toggle).toBe("disable");
+  expect(output.digital_output_toggles[1].name).toBe("DO2");
+  expect(output.digital_output_toggles[1].toggle).toBe("disable");
+  expect(output.toggles_of_digital_inputs[0].toggle).toBe(0);
+  expect(output.toggles_of_digital_inputs[1].toggle).toBe(0);
+  expect(output.toggles_of_digital_inputs[2].toggle).toBe(0);
+  expect(output.toggles_of_digital_inputs[3].toggle).toBe(0);
   expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe("disabled");
   expect(output.toggles_of_analog_inputs.i4_20mA_2).toBe("disabled");
   expect(output.toggles_of_analog_inputs.i0_10V_1).toBe("disabled");
@@ -130,18 +175,17 @@ test("decode case 2", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(17);
-  expect(output.toggles_of_digital_outputs).toBe("DO1 open, DO2 closed");
-  expect(output.toggles_of_digital_inputs.DI1).toBe("disabled");
-  expect(output.toggles_of_digital_inputs.DI2).toBe(
-    "Counter mode stop counting"
-  );
-  expect(output.toggles_of_digital_inputs.DI3).toBe("Digital Input Mode");
-  expect(output.toggles_of_digital_inputs.DI4).toBe(
-    "Counter mode pulse-start counting"
-  );
-  expect(output.digital_input_status.DI3).toBe("low");
-  expect(output.di_counter.DI2).toBe(0);
-  expect(output.di_counter.DI4).toBe(21);
+  expect(output.digital_output_toggles[0].name).toBe("DO1");
+  expect(output.digital_output_toggles[0].toggle).toBe("enable");
+  expect(output.digital_output_toggles[1].name).toBe("DO2");
+  expect(output.digital_output_toggles[1].toggle).toBe("enable");
+  expect(output.toggles_of_digital_inputs[0].toggle).toBe(0);
+  expect(output.toggles_of_digital_inputs[1].toggle).toBe(2);
+  expect(output.toggles_of_digital_inputs[2].toggle).toBe(1);
+  expect(output.toggles_of_digital_inputs[3].toggle).toBe(3);
+  expect(output.digital_input_statuses.DI3).toBe("low");
+  expect(output.di_counter[1].counter).toBe(0);
+  expect(output.di_counter[3].counter).toBe(21);
   expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe(
     "collected successfully"
   );
@@ -169,12 +213,15 @@ test("decode case 3", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(17);
-  expect(output.toggles_of_digital_outputs).toBe("DO1 and DO2 disabled");
+  expect(output.digital_output_toggles[0].name).toBe("DO1");
+  expect(output.digital_output_toggles[0].toggle).toBe("disable");
+  expect(output.digital_output_toggles[1].name).toBe("DO2");
+  expect(output.digital_output_toggles[1].toggle).toBe("disable");
   tog_di = output.toggles_of_digital_inputs;
-  expect(tog_di.DI1).toBe("disabled");
-  expect(tog_di.DI2).toBe("disabled");
-  expect(tog_di.DI3).toBe("disabled");
-  expect(tog_di.DI4).toBe("disabled");
+  expect(tog_di[0].toggle).toBe(0);
+  expect(tog_di[1].toggle).toBe(0);
+  expect(tog_di[2].toggle).toBe(0);
+  expect(tog_di[3].toggle).toBe(0);
   tog_ai = output.toggles_of_analog_inputs;
   expect(tog_ai.i4_20mA_1).toBe("disabled");
   expect(tog_ai.i4_20mA_2).toBe("disabled");
