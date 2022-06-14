@@ -7,6 +7,8 @@ const OPEN = 1;
 const DIGITAL_INPUT_MODE = 1;
 const COUNTER_STOP_COUNTING_MODE = 2;
 const COUNTER_START_COUNTING_MODE = 3;
+const COLLECTED_SUCCESS = 1;
+const COLLECTED_FAIL = 2;
 
 const BYTE_LENGTH = {
   PACKET_LENGTH: 2,
@@ -167,17 +169,16 @@ function decode(bytes) {
   }
 
   // analog input
-  let [toggles_of_analog_inputs, analogInput] = getToggleAnalogStatus(
-    reader.read(TOGGLE_ANALOG_INPUT_LENGTH)
-  );
-  if (analogInput.length > 0) {
-    let analog_input_value = getAnalogInput(
-      reader.read(FLOAT_LENGTH * analogInput.length),
-      analogInput
-    );
-    output.analog_input_value = analog_input_value;
+  let toggleAnalogByte = reader.read(TOGGLE_ANALOG_INPUT_LENGTH);
+  let togglesOfAnalogInput = getToggleAnalogStatus(toggleAnalogByte);
+
+  if (hasAnalogInput(togglesOfAnalogInput)) {
+    let analogInputSize = getAnalogInputSize(togglesOfAnalogInput);
+    let analogInputByte = reader.read(analogInputSize);
+    let ai_value = getAnalogValue(togglesOfAnalogInput, analogInputByte);
+    output.analog_input_value = ai_value;
   }
-  output.toggles_of_analog_inputs = toggles_of_analog_inputs;
+  output.toggles_of_analog_inputs = togglesOfAnalogInput;
 
   // modbus
   let modbus = [];
@@ -407,56 +408,94 @@ function getDigitalCounter(inputToggles, counterByte) {
 function getToggleAnalogInput(bits) {
   switch (bits) {
     case 0b00:
-      return "disabled";
+      return DISABLE;
     case 0b01:
-      return "collected successfully";
+      return COLLECTED_SUCCESS;
     case 0b10:
-      return "collect failed";
+      return COLLECTED_FAIL;
     default:
       return "Not Valid Input";
   }
 }
-const ANALOG_INPUT_STATUS_TEMPLATE = {
-  i4_20mA_1: "",
-  i4_20mA_2: "",
-  i0_10V_1: "",
-  i0_10V_2: "",
-  iPT100_1: "",
-  iPT100_2: "",
-};
+
+const ANALOG_INPUT_TOGGLE_TEMPLATE = [
+  { name: "i4_20mA_1", toggle: DISABLE },
+  { name: "i4_20mA_2", toggle: DISABLE },
+  { name: "i0_10V_1", toggle: DISABLE },
+  { name: "i0_10V_2", toggle: DISABLE },
+  { name: "iPT100_1", toggle: DISABLE },
+  { name: "iPT100_2", toggle: DISABLE },
+];
 
 function getToggleAnalogStatus(bytes) {
-  let toggles_of_analog_inputs = { ...ANALOG_INPUT_STATUS_TEMPLATE };
-  let analogInput = [];
+  let toggles_of_analog_inputs = [...ANALOG_INPUT_TOGGLE_TEMPLATE];
   let byte1 = bytes[0];
   let byte2 = bytes[1];
-  Object.keys(toggles_of_analog_inputs).forEach((keys, index) => {
-    // console.log(interface);
-    if (index < 4) {
-      toggles_of_analog_inputs[`${keys}`] = getToggleAnalogInput(
-        (byte1 >> (index * 2)) & 0x3
-      );
-    } else {
-      toggles_of_analog_inputs[`${keys}`] = getToggleAnalogInput(
-        (byte2 >> ((index - 4) * 2)) & 0x3
-      );
-    }
-    if (toggles_of_analog_inputs[`${keys}`].includes("collected")) {
-      analogInput.push(`${keys}`);
-    }
-  });
+  // setAnalog for Byte1 (4-20mA , 0-10v)
+  for (let i = 0; i < 4; i++) {
+    toggles_of_analog_inputs[i].toggle = getToggleAnalogInput(
+      (byte1 >> (i * 2)) & 0x3
+    );
+  }
+  // setAnalog for Byte2 (PT100)
+  for (let i = 0; i < 2; i++) {
+    console.log((byte2 >> (i * 2)) & 0x3);
+    toggles_of_analog_inputs[i + 4].toggle = getToggleAnalogInput(
+      (byte2 >> (i * 2)) & 0x3
+    );
+  }
 
-  return [toggles_of_analog_inputs, analogInput];
+  return toggles_of_analog_inputs;
 }
 
-function getAnalogInput(bytes, analogInput) {
-  let analog_input_value = {};
-  let reader = Reader(bytes);
+function hasAnalogInput(toggleAnalog) {
+  for (const { toggle } of toggleAnalog) {
+    if (toggle == COLLECTED_FAIL || toggle == COLLECTED_SUCCESS) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getAnalogInputSize(toggleAnalog) {
+  let byteSize = 0;
+  let { FLOAT_LENGTH } = BYTE_LENGTH;
+  for (const { toggle } of toggleAnalog) {
+    if (toggle == COLLECTED_FAIL || toggle == COLLECTED_SUCCESS) {
+      byteSize += FLOAT_LENGTH;
+    }
+  }
+  return byteSize;
+}
+
+const ANALOG_INPUT_VALUE_TEMPLATE = [
+  { name: "i4_20mA_1", value: null },
+  { name: "i4_20mA_2", value: null },
+  { name: "i0_10V_1", value: null },
+  { name: "i0_10V_2", value: null },
+  { name: "iPT100_1", value: null },
+  { name: "iPT100_2", value: null },
+];
+
+function getAnalogValue(toggleAnalog, analogInputByte) {
+  let analog_input_value = [...ANALOG_INPUT_VALUE_TEMPLATE];
   const { FLOAT_LENGTH } = BYTE_LENGTH;
-  analogInput.forEach((ai, index) => {
-    analog_input_value[`${ai}`] =
-      Math.round(readFloatLE(reader.read(FLOAT_LENGTH)) * 100, 2) / 100;
-  });
+  let analogIndex = 0;
+  for (const toggle in toggleAnalog) {
+    if (
+      toggleAnalog[toggle].toggle == COLLECTED_FAIL ||
+      toggleAnalog[toggle].toggle == COLLECTED_SUCCESS
+    ) {
+      analog_input_value[toggle].value =
+        Math.round(
+          readFloatLE(
+            analogInputByte.slice(analogIndex, analogIndex + FLOAT_LENGTH)
+          ) * 100,
+          2
+        ) / 100;
+      analogIndex += FLOAT_LENGTH;
+    }
+  }
   return analog_input_value;
 }
 

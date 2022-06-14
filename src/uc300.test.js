@@ -52,9 +52,9 @@ test("getDigitalInputStatus", () => {
 });
 
 test("getToggleAnalogInput", () => {
-  expect(getToggleAnalogInput(0b00)).toBe("disabled");
-  expect(getToggleAnalogInput(0b01)).toBe("collected successfully");
-  expect(getToggleAnalogInput(0b10)).toBe("collect failed");
+  expect(getToggleAnalogInput(0b00)).toBe(0);
+  expect(getToggleAnalogInput(0b01)).toBe(1);
+  expect(getToggleAnalogInput(0b10)).toBe(2);
   expect(getToggleAnalogInput(0b11)).toBe("Not Valid Input");
 });
 
@@ -156,12 +156,12 @@ test("decode case 1", () => {
   expect(output.toggles_of_digital_inputs[1].toggle).toBe(0);
   expect(output.toggles_of_digital_inputs[2].toggle).toBe(0);
   expect(output.toggles_of_digital_inputs[3].toggle).toBe(0);
-  expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.i4_20mA_2).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.i0_10V_1).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.i0_10V_2).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.iPT100_1).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.iPT100_2).toBe("disabled");
+  expect(output.toggles_of_analog_inputs[0].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[1].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[2].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[3].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[4].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[5].toggle).toBe(0);
 });
 
 test("decode case 2", () => {
@@ -188,21 +188,18 @@ test("decode case 2", () => {
   expect(output.digital_input_statuses[3].value).toBe(0);
   expect(output.di_counter[1].counter).toBe(0);
   expect(output.di_counter[3].counter).toBe(21);
-  expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe(
-    "collected successfully"
-  );
-  expect(output.toggles_of_analog_inputs.i4_20mA_2).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.i0_10V_1).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.i0_10V_2).toBe("disabled");
-  expect(output.toggles_of_analog_inputs.iPT100_1).toBe(
-    "collected successfully"
-  );
-  expect(output.toggles_of_analog_inputs.iPT100_2).toBe(
-    "collected successfully"
-  );
-  expect(output.analog_input_value.i4_20mA_1).toBe(0);
-  expect(output.analog_input_value.iPT100_1).toBe(27.2);
-  expect(output.analog_input_value.iPT100_2).toBe(0);
+  expect(output.toggles_of_analog_inputs[0].toggle).toBe(1);
+  expect(output.toggles_of_analog_inputs[1].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[2].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[3].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[4].toggle).toBe(1);
+  expect(output.toggles_of_analog_inputs[5].toggle).toBe(1);
+  expect(output.analog_input_value[0].value).toBe(0);
+  expect(output.analog_input_value[1].value).toBe(null);
+  expect(output.analog_input_value[2].value).toBe(null);
+  expect(output.analog_input_value[3].value).toBe(null);
+  expect(output.analog_input_value[4].value).toBe(27.2);
+  expect(output.analog_input_value[5].value).toBe(0);
   expect(output.modbus);
 });
 
@@ -224,13 +221,12 @@ test("decode case 3", () => {
   expect(tog_di[1].toggle).toBe(0);
   expect(tog_di[2].toggle).toBe(0);
   expect(tog_di[3].toggle).toBe(0);
-  tog_ai = output.toggles_of_analog_inputs;
-  expect(tog_ai.i4_20mA_1).toBe("disabled");
-  expect(tog_ai.i4_20mA_2).toBe("disabled");
-  expect(tog_ai.i0_10V_1).toBe("disabled");
-  expect(tog_ai.i0_10V_2).toBe("disabled");
-  expect(tog_ai.iPT100_1).toBe("disabled");
-  expect(tog_ai.iPT100_2).toBe("disabled");
+  expect(output.toggles_of_analog_inputs[0].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[1].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[2].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[3].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[4].toggle).toBe(0);
+  expect(output.toggles_of_analog_inputs[5].toggle).toBe(0);
   modbus = output.modbus;
   expect(modbus[0].channel_id).toBe(1);
   expect(modbus[0].status).toBe("collected successfully");
