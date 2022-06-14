@@ -1,14 +1,3 @@
-const BYTE_INDEX = {
-  DATA_TYPE: 1,
-  PACKET_LENGTH: 2,
-  PACKET_VERSION: 4,
-  TIMESTAMP: 5,
-  SIGNAL: 9,
-  TOGGLE_DIGITAL_OUTPUT: 10,
-  TOGGLE_DIGITAL_INPUT: 11,
-  TOGGLE_ANALOG_INPUT: 12,
-};
-
 const BYTE_LENGTH = {
   PACKET_LENGTH: 2,
   TIMESTAMP_LENGTH: 4,
@@ -44,18 +33,70 @@ function byte2hex(byte) {
   return parseInt(byte).toString(16);
 }
 
+function getDataSize(dataType) {
+  switch (dataType) {
+    case "Coil":
+      return 1;
+    case "Discrete":
+      return 1;
+    case "Input16":
+      return 2;
+    case "Hold16":
+      return 2;
+    case "Hold32":
+      return 4;
+    case "Hold_float":
+      return 4;
+    case "Input32":
+      return 4;
+    case "Input_float":
+      return 4;
+    case "Input_int32_with upper 16 bits":
+      return 4;
+    case "Input_int32_with lower 16 bits":
+      return 4;
+    case "Hold_int32_with upper 16 bits":
+      return 4;
+    case "Hold_int32_with lower 16 bits":
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+function getParser(dataType) {
+  switch (dataType) {
+    case "Coil":
+      return readInt8LE;
+    case "Discrete":
+      return readInt8LE;
+    case "Input16":
+      return readInt16LE;
+    case "Hold16":
+      return readInt16LE;
+    case "Hold32":
+      return readInt32LE;
+    case "Hold_float":
+      return readFloatLE;
+    case "Input32":
+      return readInt32LE;
+    case "Input_float":
+      return readFloatLE;
+    case "Input_int32_with upper 16 bits":
+      return readInt32LE;
+    case "Input_int32_with lower 16 bits":
+      return readInt32LE;
+    case "Hold_int32_with upper 16 bits":
+      return readInt32LE;
+    case "Hold_int32_with lower 16 bits":
+      return readInt32LE;
+    default:
+      return () => {};
+  }
+}
+
 function decode(bytes) {
   let output = { ...OUTPUT_TEMPLATE };
-
-  // const {
-  //   DATA_TYPE,
-  //   PACKET_VERSION,
-  //   SIGNAL,
-  //   TIMESTAMP,
-  //   TOGGLE_DIGITAL_OUTPUT,
-  //   TOGGLE_DIGITAL_INPUT,
-  //   TOGGLE_ANALOG_INPUT,
-  // } = BYTE_INDEX;
 
   const {
     PACKET_LENGTH,
@@ -130,26 +171,17 @@ function decode(bytes) {
 
   // modbus
   let modbus = [];
-  while (reader.hasLeft()) {
+  while (reader.hasNext() && reader.getSize() !== reader.index() + 1) {
     let [channelId, dataType] = getModbusChannelDataType(reader.read(1)[0]);
     let [sign, decimal, status, quantity] = getModbusRegisterSetting(
       reader.read(1)[0]
     );
     let data = [];
+    let dataSize = getDataSize(dataType);
+    let parser = getParser(dataType);
     for (let i = 0; i < quantity; i++) {
-      if (dataType.includes("float")) {
-        // data = readFloat
-        data.push(readFloatLE(reader.read(FLOAT_LENGTH)));
-      } else if (dataType.includes("16")) {
-        // data = readInt16
-        data.push(readInt16LE(reader.read(INT16_LENGTH)));
-      } else if (dataType.includes("32")) {
-        // data = readInt32
-        data = readInt32LE(reader.read(INT32_LENGTH));
-      } else if (dataType.includes("Coil") || dataType.includes("Discrete")) {
-        // ddata = reader.read(1)[0]
-        data.push(reader.read(1)[0]);
-      }
+      let mBytes = reader.read(dataSize);
+      data.push(parser(mBytes));
     }
     modbus.push({
       channel_id: channelId,
@@ -410,8 +442,12 @@ let Reader = (arr) => {
     i = 0;
   };
 
-  const hasLeft = () => {
-    return i < arr.length - 1;
+  const hasNext = () => {
+    return i < arr.length;
+  };
+
+  const getSize = () => {
+    return arr.length;
   };
 
   const index = () => {
@@ -422,7 +458,8 @@ let Reader = (arr) => {
     read,
     skip,
     reset,
-    hasLeft,
+    hasNext,
+    getSize,
     index,
   };
 };
@@ -436,5 +473,11 @@ module.exports = {
   getDigitalInputStatus,
   getDigitalInputMode,
   getDigitalCounter,
+  getDataSize,
+  getParser,
   decode,
+  readInt8LE,
+  readInt16LE,
+  readInt32LE,
+  readFloatLE,
 };

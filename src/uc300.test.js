@@ -1,13 +1,18 @@
 const {
   getToggleDigitalOutput,
   getDigitalOutputStatus,
-  getToggleDigitalInput,
   getDigitalInput,
   getToggleAnalogInput,
   getDigitalInputStatus,
   getDigitalInputMode,
   getDigitalCounter,
+  getDataSize,
+  getParser,
   decode,
+  readInt8LE,
+  readInt16LE,
+  readInt32LE,
+  readFloatLE,
 } = require("./uc300");
 
 test("getToggleDigitalOutput", () => {
@@ -59,6 +64,38 @@ test("getDigitalCounter", () => {
   output = getDigitalCounter(bytes, counter);
   expect(output.DI2).toBe(0);
   expect(output.DI4).toBe(21);
+});
+
+test("getDataSize", () => {
+  expect(getDataSize("Coil")).toBe(1);
+  expect(getDataSize("Discrete")).toBe(1);
+  expect(getDataSize("Input16")).toBe(2);
+  expect(getDataSize("Hold16")).toBe(2);
+  expect(getDataSize("Hold32")).toBe(4);
+  expect(getDataSize("Hold_float")).toBe(4);
+  expect(getDataSize("Input32")).toBe(4);
+  expect(getDataSize("Input_float")).toBe(4);
+  expect(getDataSize("Input_int32_with upper 16 bits")).toBe(4);
+  expect(getDataSize("Input_int32_with lower 16 bits")).toBe(4);
+  expect(getDataSize("Hold_int32_with upper 16 bits")).toBe(4);
+  expect(getDataSize("Hold_int32_with lower 16 bits")).toBe(4);
+  expect(getDataSize("")).toBe(0);
+});
+
+test("getParser", () => {
+  expect(getParser("Coil")).toBe(readInt8LE);
+  expect(getParser("Discrete")).toBe(readInt8LE);
+  expect(getParser("Input16")).toBe(readInt16LE);
+  expect(getParser("Hold16")).toBe(readInt16LE);
+  expect(getParser("Hold32")).toBe(readInt32LE);
+  expect(getParser("Hold_float")).toBe(readFloatLE);
+  expect(getParser("Input32")).toBe(readInt32LE);
+  expect(getParser("Input_float")).toBe(readFloatLE);
+  expect(getParser("Input_int32_with upper 16 bits")).toBe(readInt32LE);
+  expect(getParser("Input_int32_with lower 16 bits")).toBe(readInt32LE);
+  expect(getParser("Hold_int32_with upper 16 bits")).toBe(readInt32LE);
+  expect(getParser("Hold_int32_with lower 16 bits")).toBe(readInt32LE);
+  // expect(getParser("")).toEqual(() => {});
 });
 
 test("decode case 1", () => {
