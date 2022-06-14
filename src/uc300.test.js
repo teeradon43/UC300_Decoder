@@ -1,5 +1,4 @@
 const {
-  getToggleDigitalOutput,
   getDigitalOutputStatuses,
   getDigitalInput,
   getToggleAnalogInput,
@@ -16,19 +15,16 @@ const {
   readFloatLE,
 } = require("./uc300");
 
-test("getToggleDigitalOutput", () => {
-  expect(getToggleDigitalOutput(0x00)).toBe("DO1 and DO2 disabled");
-  expect(getToggleDigitalOutput(0x01)).toBe("DO1 enabled, DO2 disabled");
-  expect(getToggleDigitalOutput(0x02)).toBe("DO1 disabled, DO2 enabled");
-  expect(getToggleDigitalOutput(0x03)).toBe("DO1 and DO2 enabled");
-  expect(getToggleDigitalOutput("")).toBe("Not Valid Input");
-});
-
 test("getDigitalOutputStatuses", () => {
-  expect(getDigitalOutputStatuses(0x00)).toBe("DO1 and DO2 closed");
-  expect(getDigitalOutputStatuses(0x01)).toBe("DO1 open, DO2 closed");
-  expect(getDigitalOutputStatuses(0x02)).toBe("DO1 closed, DO2 open");
-  expect(getDigitalOutputStatuses(0x03)).toBe("DO1 and DO2 open");
+  expect(getDigitalOutputStatuses(0x00)[0].status).toBe(0);
+  expect(getDigitalOutputStatuses(0x00)[1].status).toBe(0);
+  expect(getDigitalOutputStatuses(0x01)[0].status).toBe(1);
+  expect(getDigitalOutputStatuses(0x01)[1].status).toBe(0);
+  expect(getDigitalOutputStatuses(0x02)[0].status).toBe(0);
+  expect(getDigitalOutputStatuses(0x02)[1].status).toBe(1);
+  expect(getDigitalOutputStatuses(0x03)[0].status).toBe(1);
+  expect(getDigitalOutputStatuses(0x03)[1].status).toBe(1);
+  expect(getDigitalOutputStatuses(0x04)).toBe("Not Valid Input");
   expect(getDigitalOutputStatuses("")).toBe("Not Valid Input");
 });
 
@@ -41,14 +37,17 @@ test("getDigitalInputMode", () => {
 });
 
 test("getDigitalInput", () => {
-  expect(getDigitalInput(0x00).DI1).toBe("low");
-  expect(getDigitalInput(0x01).DI1).toBe("high");
+  expect(getDigitalInput(0x00)[0].value).toBe(0);
+  expect(getDigitalInput(0x01)[0].value).toBe(1);
+  expect(getDigitalInput(0x02)[1].value).toBe(1);
+  expect(getDigitalInput(0x03)[0].value).toBe(1);
+  expect(getDigitalInput(0x03)[1].value).toBe(1);
   expect(getDigitalInput(0xff)).toBe("Not Valid Input");
 });
 
 test("getDigitalInputStatus", () => {
-  expect(getDigitalInputStatus(0b0)).toBe("low");
-  expect(getDigitalInputStatus(0b1)).toBe("high");
+  expect(getDigitalInputStatus(0b0)).toBe(0);
+  expect(getDigitalInputStatus(0b1)).toBe(1);
   expect(getDigitalInputStatus()).toBe("Not Valid Input");
 });
 
@@ -78,24 +77,24 @@ test("getDigitalCounter", () => {
 test("getDigitalOutputToggle", () => {
   output = getDigitalOutputToggle(0x00);
   expect(output[0].name).toBe("DO1");
-  expect(output[0].toggle).toBe("disable");
+  expect(output[0].toggle).toBe(0);
   expect(output[1].name).toBe("DO2");
-  expect(output[1].toggle).toBe("disable");
+  expect(output[1].toggle).toBe(0);
   output = getDigitalOutputToggle(0x01);
   expect(output[0].name).toBe("DO1");
-  expect(output[0].toggle).toBe("enable");
+  expect(output[0].toggle).toBe(1);
   expect(output[1].name).toBe("DO2");
-  expect(output[1].toggle).toBe("disable");
+  expect(output[1].toggle).toBe(0);
   output = getDigitalOutputToggle(0x02);
   expect(output[0].name).toBe("DO1");
-  expect(output[0].toggle).toBe("disable");
+  expect(output[0].toggle).toBe(0);
   expect(output[1].name).toBe("DO2");
-  expect(output[1].toggle).toBe("enable");
+  expect(output[1].toggle).toBe(1);
   output = getDigitalOutputToggle(0x03);
   expect(output[0].name).toBe("DO1");
-  expect(output[0].toggle).toBe("enable");
+  expect(output[0].toggle).toBe(1);
   expect(output[1].name).toBe("DO2");
-  expect(output[1].toggle).toBe("enable");
+  expect(output[1].toggle).toBe(1);
   output = getDigitalOutputToggle(0x04);
   expect(output[0].name).toBe("DO1");
   expect(output[0].toggle).toBe("Not Valid Input");
@@ -149,10 +148,10 @@ test("decode case 1", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(20);
-  expect(output.digital_output_toggles[0].name).toBe("DO1");
-  expect(output.digital_output_toggles[0].toggle).toBe("disable");
-  expect(output.digital_output_toggles[1].name).toBe("DO2");
-  expect(output.digital_output_toggles[1].toggle).toBe("disable");
+  expect(output.toggles_of_digital_outputs[0].name).toBe("DO1");
+  expect(output.toggles_of_digital_outputs[0].toggle).toBe(0);
+  expect(output.toggles_of_digital_outputs[1].name).toBe("DO2");
+  expect(output.toggles_of_digital_outputs[1].toggle).toBe(0);
   expect(output.toggles_of_digital_inputs[0].toggle).toBe(0);
   expect(output.toggles_of_digital_inputs[1].toggle).toBe(0);
   expect(output.toggles_of_digital_inputs[2].toggle).toBe(0);
@@ -175,15 +174,18 @@ test("decode case 2", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(17);
-  expect(output.digital_output_toggles[0].name).toBe("DO1");
-  expect(output.digital_output_toggles[0].toggle).toBe("enable");
-  expect(output.digital_output_toggles[1].name).toBe("DO2");
-  expect(output.digital_output_toggles[1].toggle).toBe("enable");
+  expect(output.toggles_of_digital_outputs[0].name).toBe("DO1");
+  expect(output.toggles_of_digital_outputs[0].toggle).toBe(1);
+  expect(output.toggles_of_digital_outputs[1].name).toBe("DO2");
+  expect(output.toggles_of_digital_outputs[1].toggle).toBe(1);
   expect(output.toggles_of_digital_inputs[0].toggle).toBe(0);
   expect(output.toggles_of_digital_inputs[1].toggle).toBe(2);
   expect(output.toggles_of_digital_inputs[2].toggle).toBe(1);
   expect(output.toggles_of_digital_inputs[3].toggle).toBe(3);
-  expect(output.digital_input_statuses.DI3).toBe("low");
+  expect(output.digital_input_statuses[0].value).toBe(0);
+  expect(output.digital_input_statuses[1].value).toBe(0);
+  expect(output.digital_input_statuses[2].value).toBe(0);
+  expect(output.digital_input_statuses[3].value).toBe(0);
   expect(output.di_counter[1].counter).toBe(0);
   expect(output.di_counter[3].counter).toBe(21);
   expect(output.toggles_of_analog_inputs.i4_20mA_1).toBe(
@@ -213,10 +215,10 @@ test("decode case 3", () => {
   expect(output.packet_version).toBe(10);
   expect(output.timestamp);
   expect(output.signal_strength).toBe(17);
-  expect(output.digital_output_toggles[0].name).toBe("DO1");
-  expect(output.digital_output_toggles[0].toggle).toBe("disable");
-  expect(output.digital_output_toggles[1].name).toBe("DO2");
-  expect(output.digital_output_toggles[1].toggle).toBe("disable");
+  expect(output.toggles_of_digital_outputs[0].name).toBe("DO1");
+  expect(output.toggles_of_digital_outputs[0].toggle).toBe(0);
+  expect(output.toggles_of_digital_outputs[1].name).toBe("DO2");
+  expect(output.toggles_of_digital_outputs[1].toggle).toBe(0);
   tog_di = output.toggles_of_digital_inputs;
   expect(tog_di[0].toggle).toBe(0);
   expect(tog_di[1].toggle).toBe(0);

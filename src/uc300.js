@@ -1,3 +1,13 @@
+const DISABLE = 0;
+const ENABLE = 1;
+const LOW = 0;
+const HIGH = 1;
+const CLOSE = 0;
+const OPEN = 1;
+const DIGITAL_INPUT_MODE = 1;
+const COUNTER_STOP_COUNTING_MODE = 2;
+const COUNTER_START_COUNTING_MODE = 3;
+
 const BYTE_LENGTH = {
   PACKET_LENGTH: 2,
   TIMESTAMP_LENGTH: 4,
@@ -14,8 +24,9 @@ const OUTPUT_TEMPLATE = {
   timestamp: "",
   signal_strength: "",
   toggles_of_digital_outputs: {},
+  digital_output_statuses: {},
   toggles_of_digital_inputs: {},
-  digital_input_status: {},
+  digital_input_statuses: {},
   di_counter: {},
   toggles_of_analog_inputs: {},
   analog_input_value: {},
@@ -90,7 +101,7 @@ function getParser(dataType) {
 
 function hasDigitalOutputStatuses(toggles) {
   for (const { toggle } of toggles) {
-    if (toggle == "enable") {
+    if (toggle == ENABLE) {
       return true;
     }
   }
@@ -132,7 +143,7 @@ function decode(bytes) {
   // digital output
   let toggleDigitalOutputByte = reader.read(1)[0];
   let digitalOutputToggle = getDigitalOutputToggle(toggleDigitalOutputByte);
-  output.digital_output_toggles = digitalOutputToggle;
+  output.toggles_of_digital_outputs = digitalOutputToggle;
 
   if (hasDigitalOutputStatuses(digitalOutputToggle)) {
     output.digital_output_statuses = getDigitalOutputStatuses(
@@ -150,7 +161,6 @@ function decode(bytes) {
   }
   if (hasCounterMode(digitalInputToggle)) {
     let counterToggleSize = getCounterToggleSize(digitalInputToggle);
-    console.log("counter Size", counterToggleSize);
     let counterByte = reader.read(counterToggleSize);
     let di_counter = getDigitalCounter(digitalInputToggle, counterByte);
     output.di_counter = di_counter;
@@ -242,34 +252,35 @@ function readFloatLE(bytes) {
 /* ******************************************
  *
  ********************************************/
-function getToggleDigitalOutput(byte) {
-  switch (byte) {
-    case 0x00:
-      return "DO1 and DO2 disabled";
-    case 0x01:
-      return "DO1 enabled, DO2 disabled";
-    case 0x02:
-      return "DO1 disabled, DO2 enabled";
-    case 0x03:
-      return "DO1 and DO2 enabled";
-    default:
-      return "Not Valid Input";
-  }
-}
+
+const DO_STATUSES_TEMPLATE = [
+  { name: "DO1", status: null },
+  { name: "DO2", status: null },
+];
 
 function getDigitalOutputStatuses(byte) {
+  let do_statuses = [...DO_STATUSES_TEMPLATE];
   switch (byte) {
     case 0x00:
-      return "DO1 and DO2 closed";
+      do_statuses[0].status = CLOSE;
+      do_statuses[1].status = CLOSE;
+      break;
     case 0x01:
-      return "DO1 open, DO2 closed";
+      do_statuses[0].status = OPEN;
+      do_statuses[1].status = CLOSE;
+      break;
     case 0x02:
-      return "DO1 closed, DO2 open";
+      do_statuses[0].status = CLOSE;
+      do_statuses[1].status = OPEN;
+      break;
     case 0x03:
-      return "DO1 and DO2 open";
+      do_statuses[0].status = OPEN;
+      do_statuses[1].status = OPEN;
+      break;
     default:
       return "Not Valid Input";
   }
+  return do_statuses;
 }
 
 function getDigitalInputMode(bits) {
@@ -286,10 +297,6 @@ function getDigitalInputMode(bits) {
       return "Not Valid Input";
   }
 }
-const DISABLE = 0;
-const DIGITAL_INPUT_MODE = 1;
-const COUNTER_STOP_COUNTING_MODE = 2;
-const COUNTER_START_COUNTING_MODE = 3;
 
 const DIGITAL_INPUT_TEMPLATE = [
   { name: "DI1", toggle: DISABLE },
@@ -298,12 +305,12 @@ const DIGITAL_INPUT_TEMPLATE = [
   { name: "DI4", toggle: DISABLE },
 ];
 
-const DIGITAL_INPUT_VALUE_TEMPLATE = {
-  DI1: "",
-  DI2: "",
-  DI3: "",
-  DI4: "",
-};
+const DIGITAL_INPUT_VALUE_TEMPLATE = [
+  { name: "DI1", value: null },
+  { name: "DI2", value: null },
+  { name: "DI3", value: null },
+  { name: "DI4", value: null },
+];
 
 function getDigitalInputToggles(byte) {
   let di_toggle = [...DIGITAL_INPUT_TEMPLATE];
@@ -315,10 +322,10 @@ function getDigitalInputToggles(byte) {
 }
 
 function getDigitalInput(byte) {
-  let digital_input_status = { ...DIGITAL_INPUT_VALUE_TEMPLATE };
+  let digital_input_status = [...DIGITAL_INPUT_VALUE_TEMPLATE];
   if (byte > 0x0f) return "Not Valid Input";
   for (let i = 0; i < 4; i++) {
-    digital_input_status[`DI${i + 1}`] = getDigitalInputStatus((byte >> i) & 1);
+    digital_input_status[i].value = getDigitalInputStatus((byte >> i) & 1);
   }
   return digital_input_status;
 }
@@ -326,9 +333,9 @@ function getDigitalInput(byte) {
 function getDigitalInputStatus(bits) {
   switch (bits) {
     case 0:
-      return "low";
+      return LOW;
     case 1:
-      return "high";
+      return HIGH;
     default:
       return "Not Valid Input";
   }
@@ -394,7 +401,6 @@ function getDigitalCounter(inputToggles, counterByte) {
       counterIndex += INT32_LENGTH;
     }
   }
-  // console.log("DI_COUNTER", di_counter);
   return di_counter;
 }
 
@@ -528,23 +534,23 @@ function getDigitalOutputToggle(byte) {
   switch (byte) {
     case 0x00:
       return [
-        { name: "DO1", toggle: "disable" },
-        { name: "DO2", toggle: "disable" },
+        { name: "DO1", toggle: 0 },
+        { name: "DO2", toggle: 0 },
       ];
     case 0x01:
       return [
-        { name: "DO1", toggle: "enable" },
-        { name: "DO2", toggle: "disable" },
+        { name: "DO1", toggle: 1 },
+        { name: "DO2", toggle: 0 },
       ];
     case 0x02:
       return [
-        { name: "DO1", toggle: "disable" },
-        { name: "DO2", toggle: "enable" },
+        { name: "DO1", toggle: 0 },
+        { name: "DO2", toggle: 1 },
       ];
     case 0x03:
       return [
-        { name: "DO1", toggle: "enable" },
-        { name: "DO2", toggle: "enable" },
+        { name: "DO1", toggle: 1 },
+        { name: "DO2", toggle: 1 },
       ];
     default:
       return [
@@ -555,7 +561,6 @@ function getDigitalOutputToggle(byte) {
 }
 
 module.exports = {
-  getToggleDigitalOutput,
   getDigitalOutputStatuses,
   getDigitalInputToggles,
   getToggleAnalogInput,
@@ -572,14 +577,3 @@ module.exports = {
   readInt32LE,
   readFloatLE,
 };
-
-const rawData =
-  "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
-const bytes = Buffer.from(rawData, "hex");
-output = decode(bytes);
-console.log(
-  "this one is ",
-  output.toggles_of_digital_inputs,
-  output.di_counter
-);
-// console.log(output);
