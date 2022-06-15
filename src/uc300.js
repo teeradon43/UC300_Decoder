@@ -13,6 +13,7 @@ const COUNTER_STOP_COUNTING_MODE = 2;
 const COUNTER_START_COUNTING_MODE = 3;
 const COLLECTED_SUCCESS = 1;
 const COLLECTED_FAIL = 2;
+const ERROR = -1;
 
 /* ******************************************
  * Data Template
@@ -39,47 +40,47 @@ const OUTPUT_TEMPLATE = {
   digital_input_statuses: {},
   di_counters: {},
   toggles_of_analog_inputs: {},
-  analog_input_value: {},
+  analog_input_values: {},
   modbus: {},
 };
 
 const DO_STATUSES_TEMPLATE = [
-  { name: "DO1", status: null }, // TODO: NULL?
+  { name: "DO1", status: null },
   { name: "DO2", status: null },
 ];
 
 const DIGITAL_INPUT_TEMPLATE = [
-  { name: "DI1", toggle: DISABLE },
-  { name: "DI2", toggle: DISABLE },
-  { name: "DI3", toggle: DISABLE },
-  { name: "DI4", toggle: DISABLE },
+  { name: "DI1", toggle: null },
+  { name: "DI2", toggle: null },
+  { name: "DI3", toggle: null },
+  { name: "DI4", toggle: null },
 ];
 
 const DIGITAL_INPUT_VALUE_TEMPLATE = [
-  { name: "DI1", value: null }, // TODO: NULL?
+  { name: "DI1", value: null },
   { name: "DI2", value: null },
   { name: "DI3", value: null },
   { name: "DI4", value: null },
 ];
 
 const DIGITAL_COUNTER_TEMPLATE = [
-  { name: "DI1", counter: null }, // TODO: NULL?
+  { name: "DI1", counter: null },
   { name: "DI2", counter: null },
   { name: "DI3", counter: null },
   { name: "DI4", counter: null },
 ];
 
 const ANALOG_INPUT_TOGGLE_TEMPLATE = [
-  { name: "i4_20mA_1", toggle: DISABLE }, // TODO: NULL
-  { name: "i4_20mA_2", toggle: DISABLE },
-  { name: "i0_10V_1", toggle: DISABLE },
-  { name: "i0_10V_2", toggle: DISABLE },
-  { name: "iPT100_1", toggle: DISABLE },
-  { name: "iPT100_2", toggle: DISABLE },
+  { name: "i4_20mA_1", toggle: null },
+  { name: "i4_20mA_2", toggle: null },
+  { name: "i0_10V_1", toggle: null },
+  { name: "i0_10V_2", toggle: null },
+  { name: "iPT100_1", toggle: null },
+  { name: "iPT100_2", toggle: null },
 ];
 
 const ANALOG_INPUT_VALUE_TEMPLATE = [
-  { name: "i4_20mA_1", value: null }, // TODO: NULL?
+  { name: "i4_20mA_1", value: null },
   { name: "i4_20mA_2", value: null },
   { name: "i0_10V_1", value: null },
   { name: "i0_10V_2", value: null },
@@ -106,12 +107,12 @@ const DATA_TYPE_TEMPLATE = {
  * bytes to number
  ********************************************/
 
-function readUInt8LE(bytes) {
-  return bytes & 0xff;
+function readUInt8LE(byte) {
+  return byte & 0xff;
 }
 
-function readInt8LE(bytes) {
-  let ref = readUInt8LE(bytes);
+function readInt8LE(byte) {
+  let ref = readUInt8LE(byte);
   return ref > 0x7f ? ref - 0x100 : ref;
 }
 
@@ -154,32 +155,32 @@ function byte2hex(byte) {
  * sub function
  ********************************************/
 
-function getDigitalOutputToggle(byte) {
+function getDigitalOutputToggles(byte) {
   switch (byte) {
     case 0x00:
       return [
-        { name: "DO1", toggle: 0 },
-        { name: "DO2", toggle: 0 },
+        { name: "DO1", toggle: DISABLE },
+        { name: "DO2", toggle: DISABLE },
       ];
     case 0x01:
       return [
-        { name: "DO1", toggle: 1 },
-        { name: "DO2", toggle: 0 },
+        { name: "DO1", toggle: ENABLE },
+        { name: "DO2", toggle: DISABLE },
       ];
     case 0x02:
       return [
-        { name: "DO1", toggle: 0 },
-        { name: "DO2", toggle: 1 },
+        { name: "DO1", toggle: DISABLE },
+        { name: "DO2", toggle: ENABLE },
       ];
     case 0x03:
       return [
-        { name: "DO1", toggle: 1 },
-        { name: "DO2", toggle: 1 },
+        { name: "DO1", toggle: ENABLE },
+        { name: "DO2", toggle: ENABLE },
       ];
     default:
       return [
-        { name: "DO1", toggle: "Not Valid Input" }, // TODO: -1 or else ?
-        { name: "DO2", toggle: "Not Valid Input" },
+        { name: "DO1", toggle: ERROR },
+        { name: "DO2", toggle: ERROR },
       ];
   }
 }
@@ -213,16 +214,18 @@ function getDigitalOutputStatuses(byte) {
       do_statuses[1].status = OPEN;
       break;
     default:
-      return "Not Valid Input"; // TODO: -1 or else ?
+      do_statuses[0].status = ERROR;
+      do_statuses[1].status = ERROR;
+      break;
   }
   return do_statuses;
 }
 
 function getDigitalInputToggles(byte) {
   let di_toggle = [...DIGITAL_INPUT_TEMPLATE];
-  for (const toggle in di_toggle) {
-    let mode = getDigitalInputMode((byte >> (2 * toggle)) & 0b11);
-    di_toggle[toggle].toggle = mode;
+  for (const index in di_toggle) {
+    let mode = getDigitalInputMode((byte >> (2 * index)) & 0b11);
+    di_toggle[index].toggle = mode;
   }
   return di_toggle;
 }
@@ -238,7 +241,7 @@ function getDigitalInputMode(bits) {
     case 0b11:
       return COUNTER_START_COUNTING_MODE;
     default:
-      return "Not Valid Input"; // TODO: -1
+      return ERROR;
   }
 }
 
@@ -252,22 +255,23 @@ function hasInputMode(inputToggles) {
 }
 
 function getDigitalInput(byte) {
-  let digital_input_status = [...DIGITAL_INPUT_VALUE_TEMPLATE];
-  if (byte > 0x0f) return "Not Valid Input"; // TODO: -1 or else ?
+  let digital_input_statuses = [...DIGITAL_INPUT_VALUE_TEMPLATE];
   for (let i = 0; i < 4; i++) {
-    digital_input_status[i].value = getDigitalInputStatus((byte >> i) & 1);
+    if (byte > 0x0f) digital_input_statuses[i].value = ERROR;
+    else
+      digital_input_statuses[i].value = getDigitalInputStatus((byte >> i) & 1);
   }
-  return digital_input_status;
+  return digital_input_statuses;
 }
 
-function getDigitalInputStatus(bits) {
-  switch (bits) {
+function getDigitalInputStatus(bit) {
+  switch (bit) {
     case 0:
       return LOW;
     case 1:
       return HIGH;
     default:
-      return "Not Valid Input"; // TODO: -1 or else ?
+      return ERROR;
   }
 }
 
@@ -297,12 +301,12 @@ function getCounterToggleSize(inputToggles) {
   return byteSize;
 }
 
-function getDigitalCounter(inputToggles, counterByte) {
+function getDigitalCounter(inputToggles, counterBytes) {
   let di_counters = [...DIGITAL_COUNTER_TEMPLATE];
   let { INT32_LENGTH } = BYTE_LENGTH;
   let counterIndex = 0;
-  for (const toggle in inputToggles) {
-    let mToggle = inputToggles[toggle].toggle;
+  for (const index in inputToggles) {
+    let mToggle = inputToggles[index].toggle;
     if (mToggle == DISABLE || mToggle == DIGITAL_INPUT_MODE) {
       continue;
     } else if (
@@ -310,9 +314,9 @@ function getDigitalCounter(inputToggles, counterByte) {
       mToggle == COUNTER_START_COUNTING_MODE
     ) {
       let val = readInt32LE(
-        counterByte.slice(counterIndex, counterIndex + INT32_LENGTH)
+        counterBytes.slice(counterIndex, counterIndex + INT32_LENGTH)
       );
-      di_counters[toggle].counter = val;
+      di_counters[index].counter = val;
       counterIndex += INT32_LENGTH;
     }
   }
@@ -328,7 +332,7 @@ function getToggleAnalogInput(bits) {
     case 0b10:
       return COLLECTED_FAIL;
     default:
-      return "Not Valid Input"; // TODO: -1 or else ?
+      return ERROR;
   }
 }
 
@@ -352,8 +356,8 @@ function getToggleAnalogStatus(bytes) {
   return toggles_of_analog_inputs;
 }
 
-function hasAnalogInput(toggleAnalog) {
-  for (const { toggle } of toggleAnalog) {
+function hasAnalogInput(analogToggles) {
+  for (const { toggle } of analogToggles) {
     if (toggle == COLLECTED_FAIL || toggle == COLLECTED_SUCCESS) {
       return true;
     }
@@ -361,10 +365,10 @@ function hasAnalogInput(toggleAnalog) {
   return false;
 }
 
-function getAnalogInputSize(toggleAnalog) {
+function getAnalogInputSize(analogToggles) {
   let byteSize = 0;
   let { FLOAT_LENGTH } = BYTE_LENGTH;
-  for (const { toggle } of toggleAnalog) {
+  for (const { toggle } of analogToggles) {
     if (toggle == COLLECTED_FAIL || toggle == COLLECTED_SUCCESS) {
       byteSize += FLOAT_LENGTH;
     }
@@ -372,38 +376,50 @@ function getAnalogInputSize(toggleAnalog) {
   return byteSize;
 }
 
-function getAnalogValue(toggleAnalog, analogInputByte) {
-  let analog_input_value = [...ANALOG_INPUT_VALUE_TEMPLATE];
+function getAnalogValues(analogToggles, analogInputBytes) {
+  let analog_input_values = [...ANALOG_INPUT_VALUE_TEMPLATE];
   const { FLOAT_LENGTH } = BYTE_LENGTH;
   let analogIndex = 0;
-  for (const toggle in toggleAnalog) {
+  for (const toggle in analogToggles) {
     if (
-      toggleAnalog[toggle].toggle == COLLECTED_FAIL ||
-      toggleAnalog[toggle].toggle == COLLECTED_SUCCESS
+      analogToggles[toggle].toggle == COLLECTED_FAIL ||
+      analogToggles[toggle].toggle == COLLECTED_SUCCESS
     ) {
-      analog_input_value[toggle].value =
-        Math.round(
-          readFloatLE(
-            analogInputByte.slice(analogIndex, analogIndex + FLOAT_LENGTH)
-          ) * 100,
-          2
-        ) / 100;
+      let readFloat = readFloatLE(
+        analogInputBytes.slice(analogIndex, analogIndex + FLOAT_LENGTH)
+      );
+      analog_input_values[toggle].value = toPrecision(readFloat, 2);
       analogIndex += FLOAT_LENGTH;
     }
   }
-  return analog_input_value;
+  return analog_input_values;
 }
 
-function isStopByte(readerIndex, readerLength) {
-  return readerIndex + 1 == readerLength;
+function toPrecision(number, precision = 1) {
+  let precisionNumber = 10 ** precision;
+  let result = Math.round(number * precisionNumber) / precisionNumber;
+  return result;
+}
+
+function isStopByte(bytes) {
+  return bytes[0] == 0x7e;
 }
 
 function getModbusChannelDataType(byte) {
   let DataType = { ...DATA_TYPE_TEMPLATE };
   let channelId = ((byte >> 4) & 0xf) + 1;
   let dataTypeBit = byte & 0xf;
-  let dataType = DataType[dataTypeBit];
+  let dataType = "";
+  if (dataTypeBit > 11) {
+    dataType = "ERROR";
+  } else {
+    dataType = DataType[dataTypeBit];
+  }
   return { channelId, dataType };
+}
+
+function isValidDataType(dataType) {
+  return dataType !== "ERROR";
 }
 
 function getModbusRegisterSetting(byte) {
@@ -427,7 +443,7 @@ function getDataSize(dataType) {
       return 2;
     case "Hold32":
       return 4;
-    case "Hold_float": // TODO: Reformat return 4 cases ?
+    case "Hold_float":
       return 4;
     case "Input32":
       return 4;
@@ -442,7 +458,7 @@ function getDataSize(dataType) {
     case "Hold_int32_with lower 16 bits":
       return 4;
     default:
-      return 0; // TODO: -1 or else ?
+      return -1;
   }
 }
 
@@ -480,7 +496,7 @@ function getParser(dataType) {
 const DO = () => {};
 // Decorator Pattern
 DO.getToggles = (bytes) => {
-  return getDigitalOutputToggle(bytes[0]);
+  return getDigitalOutputToggles(bytes[0]);
 };
 DO.hasStatuses = hasDigitalOutputStatuses;
 DO.getStatuses = (bytes) => {
@@ -501,9 +517,9 @@ DI.getCounters = getDigitalCounter;
 
 const AI = () => {};
 AI.getToggles = getToggleAnalogStatus;
-AI.hasAnalogInput = hasAnalogInput;
+AI.hasInput = hasAnalogInput;
 AI.getSize = getAnalogInputSize;
-AI.getValue = getAnalogValue;
+AI.getValues = getAnalogValues;
 
 const MB = () => {};
 MB.getChannelDataType = (bytes) => {
@@ -514,6 +530,7 @@ MB.getRegisterSetting = (bytes) => {
 };
 MB.getDataSize = getDataSize;
 MB.getParser = getParser;
+MB.isValidType = isValidDataType;
 
 /* ******************************************
  * Reader
@@ -601,20 +618,25 @@ function decode(bytes) {
   let togglesOfAnalogInput = AI.getToggles(
     reader.read(TOGGLE_ANALOG_INPUT_LENGTH)
   );
-  if (AI.hasAnalogInput(togglesOfAnalogInput)) {
+  if (AI.hasInput(togglesOfAnalogInput)) {
     let analogInputSize = AI.getSize(togglesOfAnalogInput);
-    let analogInputByte = reader.read(analogInputSize);
-    let ai_value = AI.getValue(togglesOfAnalogInput, analogInputByte);
-    output.analog_input_value = ai_value;
+    let analogInputBytes = reader.read(analogInputSize);
+    let ai_values = AI.getValues(togglesOfAnalogInput, analogInputBytes);
+    output.analog_input_values = ai_values;
   }
   output.toggles_of_analog_inputs = togglesOfAnalogInput;
 
   // modbus
   let modbus = [];
-  while (reader.hasNext() && !isStopByte(reader.index(), reader.getSize())) {
-    // TODO: Change isStopByte
-    let { channelId, dataType } = MB.getChannelDataType(reader.read(1));
-    // TODO: CHECK DATATYPE VALID :: TERMINATE FUNCTION
+  while (reader.hasNext()) {
+    let channelByte = reader.read(1);
+    if (!reader.hasNext() && isStopByte(channelByte)) {
+      break;
+    }
+    let { channelId, dataType } = MB.getChannelDataType(channelByte);
+    if (!MB.isValidType(dataType)) {
+      break;
+    }
     let { status, quantity } = MB.getRegisterSetting(reader.read(1));
     let dataSize = MB.getDataSize(dataType);
     let parser = MB.getParser(dataType);
@@ -664,7 +686,7 @@ module.exports = {
   getDigitalInputStatus,
   getDigitalInputMode,
   getDigitalCounter,
-  getDigitalOutputToggle,
+  getDigitalOutputToggles,
   getDataSize,
   getParser,
   decode,
