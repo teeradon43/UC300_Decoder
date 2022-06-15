@@ -169,6 +169,7 @@ test("decode case 2", () => {
     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
   const bytes = Buffer.from(rawData, "hex");
   output = decode(bytes);
+  console.log(output);
   expect(output.data_type).toBe("f4");
   expect(output.packet_length).toBe(37);
   expect(output.packet_version).toBe(10);
@@ -186,8 +187,8 @@ test("decode case 2", () => {
   expect(output.digital_input_statuses[1].value).toBe(0);
   expect(output.digital_input_statuses[2].value).toBe(0);
   expect(output.digital_input_statuses[3].value).toBe(0);
-  expect(output.di_counter[1].counter).toBe(0);
-  expect(output.di_counter[3].counter).toBe(21);
+  expect(output.di_counters[1].counter).toBe(0);
+  expect(output.di_counters[3].counter).toBe(21);
   expect(output.toggles_of_analog_inputs[0].toggle).toBe(1);
   expect(output.toggles_of_analog_inputs[1].toggle).toBe(0);
   expect(output.toggles_of_analog_inputs[2].toggle).toBe(0);
