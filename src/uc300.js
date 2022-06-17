@@ -30,10 +30,10 @@ const BYTE_LENGTH = {
 
 const OUTPUT_TEMPLATE = {
   data_type: "",
-  packet_length: "",
-  packet_version: "",
+  packet_length: null,
+  packet_version: null,
   timestamp: "",
-  signal_strength: "",
+  signal_strength: null,
   toggles_of_digital_outputs: {},
   digital_output_statuses: {},
   toggles_of_digital_inputs: {},

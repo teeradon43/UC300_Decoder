@@ -267,3 +267,10 @@ test("decode case 3", () => {
   expect(modbus[1].status).toBe("collected failed");
   expect(modbus[1].data).toStrictEqual([0]);
 });
+
+test("decode case 4", () => {
+  const rawData =
+    "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e";
+  const bytes = Buffer.from(rawData, "hex");
+  output = decode(bytes);
+});
