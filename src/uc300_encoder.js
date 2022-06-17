@@ -87,6 +87,17 @@ function getDigitalInputCountersHex(digitalInputCounter) {
   }
   return result;
 }
+
+function getAnalogInputStatusesHex(analogInputToggles) {
+  let result = 0;
+  for (const index in analogInputToggles) {
+    result += analogInputToggles[index].status;
+    result << 2;
+    if (index == 4) result << 4;
+    //TODO: Finish
+  }
+  return NumToHexString(result, 1);
+}
 /***********************************/
 
 module.exports = {
@@ -100,4 +111,5 @@ module.exports = {
   getDigitalInputTogglesHex,
   getDigitalInputStatusesHex,
   getDigitalInputCountersHex,
+  getAnalogInputStatusesHex,
 };

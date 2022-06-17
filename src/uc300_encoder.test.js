@@ -200,6 +200,32 @@ test("getDigitalInputCountersHex", () => {
   );
 });
 
+const ANALOG_INPUT_TOGGLES_TEMPLATE = [
+  { name: "i4_20mA_1", toggle: 0 },
+  { name: "i4_20mA_2", toggle: 0 },
+  { name: "i0_10V_1", toggle: 0 },
+  { name: "i0_10V_2", toggle: 0 },
+  { name: "iPT100_1", toggle: 0 },
+  { name: "iPT100_2", toggle: 0 },
+];
+
+// test("getAnalogInputTogglesHex", () => {
+//   let AIToggles = [...ANALOG_INPUT_TOGGLES_TEMPLATE];
+//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("0000");
+//   AIToggles[0].toggle = 1;
+//   AIToggles[1].toggle = 1;
+//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("0500");
+//   AIToggles[2].toggle = 1;
+//   AIToggles[3].toggle = 1;
+//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("5500");
+//   AIToggles[4].toggle = 1;
+//   AIToggles[5].toggle = 1;
+//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("5505");
+//   AIToggles[2].toggle = 2;
+//   AIToggles[3].toggle = 2;
+//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("aa05");
+// });
+
 // test("encode case 1", () => {
 //   let payload = { ...MESSAGE };
 //   payload.packet_length = 15
