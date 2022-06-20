@@ -15,14 +15,22 @@ function reverseHex(hexString) {
   return str.join("");
 }
 
-function reverseBits(bits) {
-  //
-}
-
 function NumToHexString(value, numberOfByte = 1) {
   let hexString = value.toString(16);
   hexString = hexString.padStart(numberOfByte * 2, "0");
   return hexString;
+}
+
+function FloatToHexString(value) {
+  //https://stackoverflow.com/a/47187116
+  let view = new DataView(new ArrayBuffer(4)),
+    result;
+  view.setFloat32(0, value);
+  result = Array.apply(null, { length: 4 })
+    .map((_, i) => view.getUint8(i).toString(16))
+    .join("");
+  result = result.padEnd(8, "0");
+  return reverseHex(result);
 }
 /***********************************/
 
@@ -104,6 +112,18 @@ function getAnalogInputTogglesHex(analogInputToggles) {
   }
   return NumToHexString(result, 2);
 }
+
+function getAnalogInputValuesHex(analogInputValues) {
+  let result = "";
+  let hexString = "";
+  for (const { value } of analogInputValues) {
+    if (value != null) {
+      hexString = FloatToHexString(value);
+      result += hexString;
+    }
+  }
+  return result;
+}
 /***********************************/
 
 module.exports = {
@@ -118,4 +138,5 @@ module.exports = {
   getDigitalInputStatusesHex,
   getDigitalInputCountersHex,
   getAnalogInputTogglesHex,
+  getAnalogInputValuesHex,
 };
