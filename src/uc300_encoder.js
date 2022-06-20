@@ -1,7 +1,40 @@
-// console.log("hey")
-// console.log('Thu Apr 14 2022 09:01:30 GMT+0700 (เวลาอินโดจีน)')
-// let deserialized = new Date('Thu Apr 14 2022 09:01:30 GMT+0700 (เวลาอินโดจีน)')
-// console.log(Number(deserialized))
+/******** Constants ********/
+const START_BYTE = "7e";
+const STOP_BYTE = "7e";
+/***********************************/
+
+/******** Data Transform ********/
+function encode(payload) {
+  let output = "";
+  output += START_BYTE;
+  output += "f4";
+  console.log(output);
+  output += getPacketLengthHex(payload.packet_length);
+  console.log(output);
+  output += getPacketVersionHex(payload.packet_version);
+  console.log(output);
+  output += getTimestampHex(payload.timestamp);
+  console.log(output);
+  output += getSignalStrengthHex(payload.signal_strength);
+  console.log(output);
+  output += getDigitalOutputTogglesHex(payload.toggles_of_digital_outputs);
+  console.log(output);
+  output += getDigitalOutputStatusesHex(payload.digital_output_statuses);
+  console.log(output);
+  output += getDigitalInputTogglesHex(payload.toggles_of_digital_inputs);
+  console.log(output);
+  output += getDigitalInputStatusesHex(payload.digital_input_statuses);
+  console.log(output);
+  output += getDigitalInputCountersHex(payload.di_counters);
+  console.log(output);
+  output += getAnalogInputTogglesHex(payload.toggles_of_analog_inputs);
+  console.log(output);
+  output += getAnalogInputValuesHex(payload.analog_input_values);
+  console.log(output);
+  output += STOP_BYTE;
+  console.log(output);
+  return output;
+}
 
 /***********************************/
 
@@ -66,6 +99,9 @@ function getDigitalOutputTogglesHex(digitalOutputToggles) {
 function getDigitalOutputStatusesHex(digitalOutputStatuses) {
   let result = 0;
   for (const statuses of digitalOutputStatuses) {
+    if (statuses.status == null) {
+      return "";
+    }
     if (statuses.name === "DO1") result += statuses.status;
     else if (statuses.name === "DO2") result += statuses.status * 2;
   }
@@ -83,6 +119,7 @@ function getDigitalInputTogglesHex(digitalInputToggles) {
 function getDigitalInputStatusesHex(digitalInputStatuses) {
   let result = 0;
   for (const index in digitalInputStatuses) {
+    if (digitalInputStatuses[index].status == null) return "";
     result += digitalInputStatuses[index].status << index;
   }
   return NumToHexString(result, 1);
@@ -127,6 +164,7 @@ function getAnalogInputValuesHex(analogInputValues) {
 /***********************************/
 
 module.exports = {
+  encode,
   reverseHex,
   getPacketLengthHex,
   getPacketVersionHex,

@@ -28,28 +28,17 @@ const BYTE_LENGTH = {
   FLOAT_LENGTH: 4,
 };
 
-const OUTPUT_TEMPLATE = {
-  data_type: "",
-  packet_length: null,
-  packet_version: null,
-  timestamp: "",
-  signal_strength: null,
-  toggles_of_digital_outputs: {},
-  digital_output_statuses: {},
-  toggles_of_digital_inputs: {},
-  digital_input_statuses: {},
-  di_counters: {},
-  toggles_of_analog_inputs: {},
-  analog_input_values: {},
-  modbus: {},
-};
+const DIGITAL_OUTPUT_TOGGLES_TEMPLATE = [
+  { name: "DO1", toggle: null },
+  { name: "DO2", toggle: null },
+];
 
-const DO_STATUSES_TEMPLATE = [
+const DIGITAL_OUTPUT_STATUSES_TEMPLATE = [
   { name: "DO1", status: null },
   { name: "DO2", status: null },
 ];
 
-const DIGITAL_INPUT_TEMPLATE = [
+const DIGITAL_INPUT_TOGGLES_TEMPLATE = [
   { name: "DI1", toggle: null },
   { name: "DI2", toggle: null },
   { name: "DI3", toggle: null },
@@ -101,6 +90,22 @@ const DATA_TYPE_TEMPLATE = {
   9: "Input_int32_with lower 16 bits",
   10: "Hold_int32_with upper 16 bits",
   11: "Hold_int32_with lower 16 bits",
+};
+
+const OUTPUT_TEMPLATE = {
+  data_type: "",
+  packet_length: null,
+  packet_version: null,
+  timestamp: "",
+  signal_strength: null,
+  toggles_of_digital_outputs: [...DIGITAL_OUTPUT_TOGGLES_TEMPLATE],
+  digital_output_statuses: [...DIGITAL_OUTPUT_STATUSES_TEMPLATE],
+  toggles_of_digital_inputs: [...DIGITAL_INPUT_TOGGLES_TEMPLATE],
+  digital_input_statuses: [...DIGITAL_INPUT_VALUE_TEMPLATE],
+  di_counters: [...DIGITAL_COUNTER_TEMPLATE],
+  toggles_of_analog_inputs: [...ANALOG_INPUT_TOGGLE_TEMPLATE],
+  analog_input_values: [...ANALOG_INPUT_VALUE_TEMPLATE],
+  modbus: {},
 };
 
 /* ******************************************
@@ -195,7 +200,7 @@ function hasDigitalOutputStatuses(toggles) {
 }
 
 function getDigitalOutputStatuses(byte) {
-  let do_statuses = [...DO_STATUSES_TEMPLATE];
+  let do_statuses = [...DIGITAL_OUTPUT_STATUSES_TEMPLATE];
   switch (byte) {
     case 0x00:
       do_statuses[0].status = CLOSE;
@@ -222,12 +227,12 @@ function getDigitalOutputStatuses(byte) {
 }
 
 function getDigitalInputToggles(byte) {
-  let di_toggle = [...DIGITAL_INPUT_TEMPLATE];
-  for (const index in di_toggle) {
+  let di_toggles = [...DIGITAL_INPUT_TOGGLES_TEMPLATE];
+  for (const index in di_toggles) {
     let mode = getDigitalInputMode((byte >> (2 * index)) & 0b11);
-    di_toggle[index].toggle = mode;
+    di_toggles[index].toggle = mode;
   }
-  return di_toggle;
+  return di_toggles;
 }
 
 function getDigitalInputMode(bits) {

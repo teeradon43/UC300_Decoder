@@ -1,4 +1,5 @@
 const {
+  encode,
   reverseHex,
   getPacketLengthHex,
   getPacketVersionHex,
@@ -13,21 +14,7 @@ const {
   getAnalogInputValuesHex,
 } = require("./uc300_encoder");
 
-const MESSAGE = {
-  data_type: "f4",
-  packet_length: null,
-  packet_version: null,
-  timestamp: "",
-  signal_strength: null,
-  toggles_of_digital_outputs: {},
-  digital_output_statuses: {},
-  toggles_of_digital_inputs: {},
-  digital_input_statuses: {},
-  di_counters: {},
-  toggles_of_analog_inputs: {},
-  analog_input_values: {},
-  modbus: {},
-};
+const { decode } = require("./uc300");
 
 test("reverseHex", () => {
   expect(reverseHex("0000")).toBe("0000");
@@ -159,6 +146,7 @@ const DIGITAL_INPUT_STATUSES_TEMPLATE = [
 
 test("getDigitalInputStatusesHex", () => {
   let DIStatuses = [...DIGITAL_INPUT_STATUSES_TEMPLATE];
+  expect(getDigitalInputStatusesHex(DIStatuses)).toBe("");
   DIStatuses[0].status = 0;
   DIStatuses[1].status = 0;
   DIStatuses[2].status = 0;
@@ -270,10 +258,21 @@ test("getAnalogInputValuesHex", () => {
   );
 });
 
-// test("encode case 1", () => {
-//   let payload = { ...MESSAGE };
-//   payload.packet_length = 15
-//   expect(getDigitalOutputStatuses(0x00)[0].status).toBe(
-//     "7EF40F000A7A80576214000000007E"
+test("encode case 1", () => {
+  const rawData = "7EF40F000A7A80576214000000007E";
+  const bytes = Buffer.from(rawData, "hex");
+  message = decode(bytes);
+  output = encode(message);
+  expect(output).toBe("7ef40f000a7a80576214000000007e");
+});
+
+// test("encode case 2", () => {
+//   const rawData =
+//     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
+//   const bytes = Buffer.from(rawData, "hex");
+//   message = decode(bytes);
+//   output = encode(message);
+//   expect(output).toBe(
+//     "7ef425000a7a805762110301d80000000000150000000105000000009a99d941000000007e"
 //   );
 // });
