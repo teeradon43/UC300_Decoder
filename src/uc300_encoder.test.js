@@ -266,13 +266,14 @@ test("encode case 1", () => {
   expect(output).toBe("7ef40f000a7a80576214000000007e");
 });
 
-// test("encode case 2", () => {
-//   const rawData =
-//     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
-//   const bytes = Buffer.from(rawData, "hex");
-//   message = decode(bytes);
-//   output = encode(message);
-//   expect(output).toBe(
-//     "7ef425000a7a805762110301d80000000000150000000105000000009a99d941000000007e"
-//   );
-// });
+test("encode case 2", () => {
+  const rawData =
+    "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
+  const bytes = Buffer.from(rawData, "hex");
+  message = decode(bytes);
+  console.log(message.digital_input_statuses);
+  output = encode(message);
+  expect(output).toBe(
+    "7ef425000a7a805762110301d80000000000150000000105000000009a99d941000000007e"
+  );
+});

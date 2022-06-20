@@ -45,11 +45,11 @@ const DIGITAL_INPUT_TOGGLES_TEMPLATE = [
   { name: "DI4", toggle: null },
 ];
 
-const DIGITAL_INPUT_VALUE_TEMPLATE = [
-  { name: "DI1", value: null },
-  { name: "DI2", value: null },
-  { name: "DI3", value: null },
-  { name: "DI4", value: null },
+const DIGITAL_INPUT_STATUSES_TEMPLATE = [
+  { name: "DI1", status: null },
+  { name: "DI2", status: null },
+  { name: "DI3", status: null },
+  { name: "DI4", status: null },
 ];
 
 const DIGITAL_COUNTER_TEMPLATE = [
@@ -101,7 +101,7 @@ const OUTPUT_TEMPLATE = {
   toggles_of_digital_outputs: [...DIGITAL_OUTPUT_TOGGLES_TEMPLATE],
   digital_output_statuses: [...DIGITAL_OUTPUT_STATUSES_TEMPLATE],
   toggles_of_digital_inputs: [...DIGITAL_INPUT_TOGGLES_TEMPLATE],
-  digital_input_statuses: [...DIGITAL_INPUT_VALUE_TEMPLATE],
+  digital_input_statuses: [...DIGITAL_INPUT_STATUSES_TEMPLATE],
   di_counters: [...DIGITAL_COUNTER_TEMPLATE],
   toggles_of_analog_inputs: [...ANALOG_INPUT_TOGGLE_TEMPLATE],
   analog_input_values: [...ANALOG_INPUT_VALUE_TEMPLATE],
@@ -260,11 +260,11 @@ function hasInputMode(inputToggles) {
 }
 
 function getDigitalInput(byte) {
-  let digital_input_statuses = [...DIGITAL_INPUT_VALUE_TEMPLATE];
+  let digital_input_statuses = [...DIGITAL_INPUT_STATUSES_TEMPLATE];
   for (let i = 0; i < 4; i++) {
-    if (byte > 0x0f) digital_input_statuses[i].value = ERROR;
+    if (byte > 0x0f) digital_input_statuses[i].status = ERROR;
     else
-      digital_input_statuses[i].value = getDigitalInputStatus((byte >> i) & 1);
+      digital_input_statuses[i].status = getDigitalInputStatus((byte >> i) & 1);
   }
   return digital_input_statuses;
 }
