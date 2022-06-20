@@ -15,6 +15,10 @@ function reverseHex(hexString) {
   return str.join("");
 }
 
+function reverseBits(bits) {
+  //
+}
+
 function NumToHexString(value, numberOfByte = 1) {
   let hexString = value.toString(16);
   hexString = hexString.padStart(numberOfByte * 2, "0");
@@ -88,15 +92,17 @@ function getDigitalInputCountersHex(digitalInputCounter) {
   return result;
 }
 
-function getAnalogInputStatusesHex(analogInputToggles) {
+function getAnalogInputTogglesHex(analogInputToggles) {
+  //TODO: Refactor this code
   let result = 0;
-  for (const index in analogInputToggles) {
-    result += analogInputToggles[index].status;
-    result << 2;
-    if (index == 4) result << 4;
-    //TODO: Finish
+  for (let index = 0; index < 4; index++) {
+    result += analogInputToggles[index].toggle << (index * 2);
   }
-  return NumToHexString(result, 1);
+  result <<= 8;
+  for (let index = 4; index < 6; index++) {
+    result += analogInputToggles[index].toggle << ((index - 4) * 2);
+  }
+  return NumToHexString(result, 2);
 }
 /***********************************/
 
@@ -111,5 +117,5 @@ module.exports = {
   getDigitalInputTogglesHex,
   getDigitalInputStatusesHex,
   getDigitalInputCountersHex,
-  getAnalogInputStatusesHex,
+  getAnalogInputTogglesHex,
 };

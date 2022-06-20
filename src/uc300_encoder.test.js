@@ -9,6 +9,7 @@ const {
   getDigitalInputTogglesHex,
   getDigitalInputStatusesHex,
   getDigitalInputCountersHex,
+  getAnalogInputTogglesHex,
 } = require("./uc300_encoder");
 
 const MESSAGE = {
@@ -208,23 +209,34 @@ const ANALOG_INPUT_TOGGLES_TEMPLATE = [
   { name: "iPT100_1", toggle: 0 },
   { name: "iPT100_2", toggle: 0 },
 ];
+// i4_20_1, i4_20_2, i0_10_1, i0_10_2, iPT100_1, iPT100_2
 
-// test("getAnalogInputTogglesHex", () => {
-//   let AIToggles = [...ANALOG_INPUT_TOGGLES_TEMPLATE];
-//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("0000");
-//   AIToggles[0].toggle = 1;
-//   AIToggles[1].toggle = 1;
-//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("0500");
-//   AIToggles[2].toggle = 1;
-//   AIToggles[3].toggle = 1;
-//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("5500");
-//   AIToggles[4].toggle = 1;
-//   AIToggles[5].toggle = 1;
-//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("5505");
-//   AIToggles[2].toggle = 2;
-//   AIToggles[3].toggle = 2;
-//   expect(getAnalogInputTogglesHex(AIToggles)).toBe("aa05");
-// });
+// i0_10_2, i0_10_1, i4_20_2, i4_20_1
+
+// i0_10_2, i0_10_1, i4_20_2, i4_20_1 | 00,00,iPT100_2, iPT100_1
+
+test("getAnalogInputTogglesHex", () => {
+  let AIToggles = [...ANALOG_INPUT_TOGGLES_TEMPLATE];
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("0000");
+  AIToggles[0].toggle = 1;
+  AIToggles[1].toggle = 1;
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("0500");
+  AIToggles[2].toggle = 1;
+  AIToggles[3].toggle = 1;
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("5500");
+  AIToggles[4].toggle = 1;
+  AIToggles[5].toggle = 1;
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("5505");
+  AIToggles[2].toggle = 2;
+  AIToggles[3].toggle = 2;
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("a505");
+  AIToggles[0].toggle = 2;
+  AIToggles[1].toggle = 2;
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("aa05");
+  AIToggles[4].toggle = 2;
+  AIToggles[5].toggle = 2;
+  expect(getAnalogInputTogglesHex(AIToggles)).toBe("aa0a");
+});
 
 // test("encode case 1", () => {
 //   let payload = { ...MESSAGE };
