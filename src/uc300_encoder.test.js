@@ -258,6 +258,13 @@ test("getAnalogInputValuesHex", () => {
   );
 });
 
+const MODBUS_TEMPLATE = [];
+
+// test("getModbusHex", () => {
+//   let modbus = [...MODBUS_TEMPLATE];
+//   expect(getModbusHex(modbus)).toBe("");
+// });
+
 test("encode case 1", () => {
   const rawData = "7EF40F000A7A80576214000000007E";
   const bytes = Buffer.from(rawData, "hex");
@@ -271,9 +278,18 @@ test("encode case 2", () => {
     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
   const bytes = Buffer.from(rawData, "hex");
   message = decode(bytes);
-  console.log(message.digital_input_statuses);
   output = encode(message);
   expect(output).toBe(
     "7ef425000a7a805762110301d80000000000150000000105000000009a99d941000000007e"
   );
 });
+
+// test("encode case 3", () => {
+//   const rawData = "7EF418000A7A8057621100000000022A150020001021007E";
+//   const bytes = Buffer.from(rawData, "hex");
+//   message = decode(bytes);
+//   console.log(message);
+//   output = encode(message);
+//   expect(output).toBe("7ef418000a7a80576211000000007e");
+//   // expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
+// });

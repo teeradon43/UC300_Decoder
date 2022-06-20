@@ -8,31 +8,18 @@ function encode(payload) {
   let output = "";
   output += START_BYTE;
   output += "f4";
-  console.log(output);
   output += getPacketLengthHex(payload.packet_length);
-  console.log(output);
   output += getPacketVersionHex(payload.packet_version);
-  console.log(output);
   output += getTimestampHex(payload.timestamp);
-  console.log(output);
   output += getSignalStrengthHex(payload.signal_strength);
-  console.log(output);
-  output += getDigitalOutputTogglesHex(payload.toggles_of_digital_outputs);
-  console.log(output);
-  output += getDigitalOutputStatusesHex(payload.digital_output_statuses);
-  console.log(output);
-  output += getDigitalInputTogglesHex(payload.toggles_of_digital_inputs);
-  console.log(output);
-  output += getDigitalInputStatusesHex(payload.digital_input_statuses);
-  console.log(output);
-  output += getDigitalInputCountersHex(payload.di_counters);
-  console.log(output);
-  output += getAnalogInputTogglesHex(payload.toggles_of_analog_inputs);
-  console.log(output);
-  output += getAnalogInputValuesHex(payload.analog_input_values);
-  console.log(output);
+  output += DO.getTogglesHex(payload.toggles_of_digital_outputs);
+  output += DO.getStatusesHex(payload.digital_output_statuses);
+  output += DI.getTogglesHex(payload.toggles_of_digital_inputs);
+  output += DI.getStatusesHex(payload.digital_input_statuses);
+  output += DI.getCounterHex(payload.di_counters);
+  output += AI.getTogglesHex(payload.toggles_of_analog_inputs);
+  output += AI.getValuesHex(payload.analog_input_values);
   output += STOP_BYTE;
-  console.log(output);
   return output;
 }
 
@@ -161,6 +148,19 @@ function getAnalogInputValuesHex(analogInputValues) {
   }
   return result;
 }
+/***********************************/
+
+/******** Decoration Pattern ********/
+const DO = () => {};
+DO.getTogglesHex = getDigitalOutputTogglesHex;
+DO.getStatusesHex = getDigitalOutputStatusesHex;
+const DI = () => {};
+DI.getTogglesHex = getDigitalInputTogglesHex;
+DI.getStatusesHex = getDigitalInputStatusesHex;
+DI.getCounterHex = getDigitalInputCountersHex;
+const AI = () => {};
+AI.getTogglesHex = getAnalogInputTogglesHex;
+AI.getValuesHex = getAnalogInputValuesHex;
 /***********************************/
 
 module.exports = {
