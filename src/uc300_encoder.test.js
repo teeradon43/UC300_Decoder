@@ -333,7 +333,6 @@ const MESSAGE_TEMPLATE = {
 //   const rawData = "7EF40F000A7A80576214000000007E";
 //   const bytes = Buffer.from(rawData, "hex");
 //   let message = decode(bytes);
-//   console.log(decode(bytes));
 //   let output = encode(message);
 //   expect(output).toBe("7ef40f000a7a80576214000000007e");
 // });
@@ -353,7 +352,6 @@ const MESSAGE_TEMPLATE = {
 //   let rawData = "7EF418000A7A8057621100000000022A150020001021007E";
 //   let bytes = Buffer.from(rawData, "hex");
 //   let message = decode(bytes);
-//   // console.log(message);
 //   let output = encode(message);
 //   expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
 // });
@@ -363,7 +361,6 @@ const MESSAGE_TEMPLATE = {
 //     "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e";
 //   let bytes = Buffer.from(rawData, "hex");
 //   let message = decode(bytes);
-//   console.log(JSON.stringify(message, null, 2));
 //   let output = encode(message);
 //   expect(output).toBe(
 //     "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e"
@@ -375,7 +372,6 @@ test("encode case 5", () => {
     "7ef47f000ad57e90621a0300550055059a993141000080400000000000000000cdccb8413333c341003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e";
   let bytes = Buffer.from(rawData, "hex");
   let message = decode(bytes);
-  console.log(JSON.stringify(message, null, 2));
   let output = encode(message);
   expect(output).toBe(
     "7ef47f000ad57e90621a0300550055059a993141000080400000000000000000cdccb8413333c341003900113900223900003339000046b90000000056b90000000066b90000000076b90000000087b90000000097b900000000a7b900000000b7b900000000c4b900000000d4b900000000e4b900000000f4b9000000007e"

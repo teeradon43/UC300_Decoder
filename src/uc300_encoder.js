@@ -125,21 +125,19 @@ function getSignalStrengthHex(value) {
 
 function getDigitalOutputTogglesHex(digitalOutputToggles) {
   let result = 0;
-  for (const toggles of digitalOutputToggles) {
-    if (toggles.name === "DO1") result += toggles.toggle;
-    else if (toggles.name === "DO2") result += toggles.toggle * 2;
+  for (let index in digitalOutputToggles) {
+    result += digitalOutputToggles[index].toggle << index;
   }
   return DecToHexString(result, 1);
 }
 
 function getDigitalOutputStatusesHex(digitalOutputStatuses) {
   let result = 0;
-  for (const statuses of digitalOutputStatuses) {
-    if (statuses.status == null) {
+  for (let index in digitalOutputStatuses) {
+    if (digitalOutputStatuses[index].status == null) {
       return "";
     }
-    if (statuses.name === "DO1") result += statuses.status;
-    else if (statuses.name === "DO2") result += statuses.status * 2;
+    result += digitalOutputStatuses[index].status << index;
   }
   return DecToHexString(result, 1);
 }
@@ -147,7 +145,7 @@ function getDigitalOutputStatusesHex(digitalOutputStatuses) {
 function getDigitalInputTogglesHex(digitalInputToggles) {
   let result = 0;
   for (const index in digitalInputToggles) {
-    result += digitalInputToggles[index].toggle << (2 * index);
+    result += digitalInputToggles[index].toggle << (index * 2);
   }
   return DecToHexString(result, 1);
 }
@@ -155,7 +153,9 @@ function getDigitalInputTogglesHex(digitalInputToggles) {
 function getDigitalInputStatusesHex(digitalInputStatuses) {
   let result = 0;
   for (const index in digitalInputStatuses) {
-    if (digitalInputStatuses[index].status == null) return "";
+    if (digitalInputStatuses[index].status == null) {
+      return "";
+    }
     result += digitalInputStatuses[index].status << index;
   }
   return DecToHexString(result, 1);
@@ -163,7 +163,6 @@ function getDigitalInputStatusesHex(digitalInputStatuses) {
 
 function getDigitalInputCountersHex(digitalInputCounter) {
   let result = "";
-  let hexString = "";
   for (const { counter } of digitalInputCounter) {
     if (counter != null) {
       result += DecToHexString(counter, 4);
@@ -173,7 +172,6 @@ function getDigitalInputCountersHex(digitalInputCounter) {
 }
 
 function getAnalogInputTogglesHex(analogInputToggles) {
-  //TODO: Refactor this code
   let result = 0;
   for (let index = 0; index < 4; index++) {
     result += analogInputToggles[index].toggle << (index * 2);
@@ -247,21 +245,29 @@ function getModbusHex(modbusArray) {
   let result = "";
   if (modbusArray.length == 0) return result;
   for (const modbus of modbusArray) {
-    let channelDataByte = (modbus.channel_id << 4) + modbus.data_type;
-    result += DecToHexString(channelDataByte);
-    let registerSettingByte =
-      (modbus.register_setting.sign << 7) +
-      (modbus.register_setting.decimal << 4) +
-      (modbus.register_setting.status << 3) +
-      modbus.register_setting.quantity;
-    result += DecToHexString(registerSettingByte);
-    let dataSize = getDataSize(modbus.data_type);
-    let parser = getParser(modbus.data_type);
+    result += MB.getChannelDataHex(modbus.channel_id, modbus.data_type);
+    result += MB.getRegisterSettingHex(modbus.register_setting);
+    let dataSize = MB.getDataSize(modbus.data_type);
+    let parser = MB.getParser(modbus.data_type);
     for (let i = 0; i < modbus.register_setting.quantity; i++) {
       result += parser(modbus.data[i], dataSize);
     }
   }
   return result;
+}
+
+function getModbusChannelDataHex(channelId, dataType) {
+  let value = (channelId << 4) + dataType;
+  return DecToHexString(value, 1);
+}
+
+function getModbusRegisterSettingHex(registerSetting) {
+  let value =
+    (registerSetting.sign << 7) +
+    (registerSetting.decimal << 4) +
+    (registerSetting.status << 3) +
+    registerSetting.quantity;
+  return DecToHexString(value, 1);
 }
 
 /***********************************/
@@ -279,6 +285,10 @@ AI.getTogglesHex = getAnalogInputTogglesHex;
 AI.getValuesHex = getAnalogInputValuesHex;
 const MB = () => {};
 MB.getHex = getModbusHex;
+MB.getChannelDataHex = getModbusChannelDataHex;
+MB.getRegisterSettingHex = getModbusRegisterSettingHex;
+MB.getDataSize = getDataSize;
+MB.getParser = getParser;
 /***********************************/
 
 module.exports = {
