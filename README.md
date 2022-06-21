@@ -1,27 +1,17 @@
-﻿# UC300_Decoder
+﻿# UC300 IoT Controller (Cellular Version)
 
 ## features: (currently aimed for Regular Report (F4) Uplink Payload)
-Available
-- Show DataType, Packet Length
-- Read mutable Digital I/Os status
-- Read mutable Analog Inputs status
-- Read Modbus
+
+Available:
+
+- Encoder, Decoder
+- Read 2 digital outputs toggles/ statuses
+- Read 4 digital inputs toggles/ statuses
+- Read 6 analog inputs toggles/ statuses
+- Read Modbus : channelId, dataType, registerSettings, and data
+- Unit Test with Jest
 
 Working:
-- Optimizing
 
-Optimizing Task :
-
-- [ ] Toggle of Digital Outputs / Digital Output Statuts
-- [ ] Toggle of Digital Inputs / Digital Input Status / Counter Value
-- [ ] Toggle of Analog Inputs / Analog Input Value
-- [ ] Modbus
-- [ ] Test Cases :
-  - [x] Case 1 (No Input/Output, No Modbus)
-  - [x] Case 2 (Have Input/Output, No Modbus)
-  - [x] Case 3 (No Input/Output, Have Modbus)
-  - [ ] Case 18
-  - [ ] Case 25
-  - [ ] Case 126
-  - [ ] Case 127
-  - [ ] Case 134
+- Refactoring
+- Testing
