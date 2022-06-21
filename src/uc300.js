@@ -616,8 +616,6 @@ function decode(bytes) {
   output.toggles_of_analog_inputs = togglesOfAnalogInput;
 
   // modbus
-  // TODO: Change DataType From String to Number
-  // TODO: Show All Register Setting to be able to encode correctly
   let modbus = [];
   while (reader.hasNext()) {
     let channelByte = reader.read(1);
