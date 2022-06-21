@@ -33,7 +33,7 @@ function encode(payload) {
   output += DI.getCounterHex(payload.di_counters);
   output += AI.getTogglesHex(payload.toggles_of_analog_inputs);
   output += AI.getValuesHex(payload.analog_input_values);
-  //TODO: Encode Modbus
+  output += getModbusHex(payload.modbus);
   output += STOP_BYTE;
   return output;
 }
@@ -227,7 +227,8 @@ function getModbusHex(modbusArray) {
     let dataSize = getDataSize(modbus.data_type);
     let parser = getParser(modbus.data_type);
     for (let i = 0; i < modbus.register_setting.quantity; i++) {
-      result += parser(modbus.data[i], dataSize);
+      let data = parser(modbus.data[i], dataSize);
+      result += reverseHex(data);
     }
   }
   return result;

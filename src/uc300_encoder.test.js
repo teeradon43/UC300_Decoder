@@ -290,6 +290,19 @@ test("getModbusHex", () => {
   };
   modbus.push(ch2Data);
   expect(getModbusHex(modbus)).toBe("001901119100");
+  let ch3Data = {
+    channel_id: 2,
+    data_type: 2,
+    register_setting: {
+      sign: 0,
+      decimal: 2,
+      status: 1,
+      quantity: 2,
+    },
+    data: [21, 32],
+  };
+  modbus.push(ch3Data);
+  expect(getModbusHex(modbus)).toBe("001901119100222a15002000");
 });
 
 const MESSAGE_TEMPLATE = {
@@ -334,6 +347,6 @@ test("encode case 3", () => {
   let message = decode(bytes);
   // console.log(message);
   let output = encode(message);
-  expect(output).toBe("7ef418000a7a80576211000000007e");
-  // expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
+  // expect(output).toBe("7ef418000a7a80576211000000007e");
+  expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
 });
