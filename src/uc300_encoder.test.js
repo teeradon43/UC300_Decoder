@@ -1,6 +1,8 @@
 const {
   encode,
   reverseHex,
+  DecToHexString,
+  FloatToHexString,
   getPacketLengthHex,
   getPacketVersionHex,
   getTimestampHex,
@@ -24,6 +26,12 @@ test("reverseHex", () => {
   expect(reverseHex("00000000")).toBe("00000000");
   expect(reverseHex("01020304")).toBe("04030201");
   expect(reverseHex("00010203")).toBe("03020100");
+});
+
+test("DecToHexString", () => {
+  expect(DecToHexString(21)).toBe("15");
+  expect(DecToHexString(25)).toBe("19");
+  expect(DecToHexString(0)).toBe("00");
 });
 
 test("getPacketLengthHex", () => {
@@ -341,12 +349,23 @@ const MESSAGE_TEMPLATE = {
 //   );
 // });
 
-test("encode case 3", () => {
-  let rawData = "7EF418000A7A8057621100000000022A150020001021007E";
+// test("encode case 3", () => {
+//   let rawData = "7EF418000A7A8057621100000000022A150020001021007E";
+//   let bytes = Buffer.from(rawData, "hex");
+//   let message = decode(bytes);
+//   // console.log(message);
+//   let output = encode(message);
+//   expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
+// });
+
+test("encode case 4", () => {
+  let rawData =
+    "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e";
   let bytes = Buffer.from(rawData, "hex");
   let message = decode(bytes);
-  // console.log(message);
+  console.log(JSON.stringify(message, null, 2));
   let output = encode(message);
-  // expect(output).toBe("7ef418000a7a80576211000000007e");
-  expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
+  expect(output).toBe(
+    "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e"
+  );
 });

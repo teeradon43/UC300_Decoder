@@ -33,7 +33,7 @@ function encode(payload) {
   output += DI.getCounterHex(payload.di_counters);
   output += AI.getTogglesHex(payload.toggles_of_analog_inputs);
   output += AI.getValuesHex(payload.analog_input_values);
-  output += getModbusHex(payload.modbus);
+  output += MB.getHex(payload.modbus);
   output += STOP_BYTE;
   return output;
 }
@@ -50,10 +50,46 @@ function reverseHex(hexString) {
   return str.join("");
 }
 
-function DecToHexString(value, numberOfBytes = 1) {
+function Int8ToHexString(value) {
+  if (value < 0) {
+    value = 0x100 + value;
+  }
   let hexString = value.toString(16);
-  hexString = hexString.padStart(numberOfBytes * 2, "0");
-  return hexString;
+  return hexString.padStart(2, "0");
+}
+
+function Int16ToHexString(value) {
+  if (value < 0) {
+    value = 0x10000 + value;
+  }
+  let hexString = value.toString(16);
+  return hexString.padStart(4, "0");
+}
+
+function Int32ToHexString(value) {
+  if (value < 0) {
+    value = 0x100000000 + value;
+  }
+  let hexString = value.toString(16);
+  return hexString.padStart(8, "0");
+}
+
+function DecToHexString(value, numberOfBytes = 1) {
+  let hexString = "";
+  switch (numberOfBytes) {
+    case 1:
+      hexString = Int8ToHexString(value);
+      break;
+    case 2:
+      hexString = Int16ToHexString(value);
+      break;
+    case 4:
+      hexString = Int32ToHexString(value);
+      break;
+    default:
+      hexString = Int8ToHexString(value);
+  }
+  return reverseHex(hexString);
 }
 
 function FloatToHexString(value, numberOfBytes = 4) {
@@ -71,8 +107,7 @@ function FloatToHexString(value, numberOfBytes = 4) {
 
 /******** Get Hex from Data ********/
 function getPacketLengthHex(value) {
-  let hexString = DecToHexString(value, 2);
-  return reverseHex(hexString);
+  return DecToHexString(value, 2);
 }
 
 function getPacketVersionHex(value) {
@@ -81,8 +116,7 @@ function getPacketVersionHex(value) {
 
 function getTimestampHex(dateString) {
   let dateNum = Number(new Date(dateString)) / 1000;
-  let hexString = DecToHexString(dateNum, 4);
-  return reverseHex(hexString);
+  return DecToHexString(dateNum, 4);
 }
 
 function getSignalStrengthHex(value) {
@@ -132,8 +166,7 @@ function getDigitalInputCountersHex(digitalInputCounter) {
   let hexString = "";
   for (const { counter } of digitalInputCounter) {
     if (counter != null) {
-      hexString = DecToHexString(counter, 4);
-      result += reverseHex(hexString);
+      result += DecToHexString(counter, 4);
     }
   }
   return result;
@@ -149,16 +182,14 @@ function getAnalogInputTogglesHex(analogInputToggles) {
   for (let index = 4; index < 6; index++) {
     result += analogInputToggles[index].toggle << ((index - 4) * 2);
   }
-  return DecToHexString(result, 2);
+  return reverseHex(DecToHexString(result, 2));
 }
 
 function getAnalogInputValuesHex(analogInputValues) {
   let result = "";
-  let hexString = "";
   for (const { value } of analogInputValues) {
     if (value != null) {
-      hexString = FloatToHexString(value);
-      result += hexString;
+      result += FloatToHexString(value);
     }
   }
   return result;
@@ -227,8 +258,7 @@ function getModbusHex(modbusArray) {
     let dataSize = getDataSize(modbus.data_type);
     let parser = getParser(modbus.data_type);
     for (let i = 0; i < modbus.register_setting.quantity; i++) {
-      let data = parser(modbus.data[i], dataSize);
-      result += reverseHex(data);
+      result += parser(modbus.data[i], dataSize);
     }
   }
   return result;
@@ -247,11 +277,15 @@ DI.getCounterHex = getDigitalInputCountersHex;
 const AI = () => {};
 AI.getTogglesHex = getAnalogInputTogglesHex;
 AI.getValuesHex = getAnalogInputValuesHex;
+const MB = () => {};
+MB.getHex = getModbusHex;
 /***********************************/
 
 module.exports = {
   encode,
   reverseHex,
+  DecToHexString,
+  FloatToHexString,
   getPacketLengthHex,
   getPacketVersionHex,
   getTimestampHex,
