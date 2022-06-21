@@ -636,7 +636,7 @@ function decode(bytes) {
     for (let i = 0; i < quantity; i++) {
       let mBytes = reader.read(dataSize);
       data.push(parser(mBytes));
-      dataHex.push(mBytes);
+      // dataHex.push(mBytes);
     }
     modbus.push({
       channel_id: channelId,
@@ -648,7 +648,7 @@ function decode(bytes) {
         quantity: quantity,
       },
       data: data,
-      dataHex: dataHex,
+      // dataHex: dataHex,
     });
   }
   output.modbus = modbus;
