@@ -1,4 +1,4 @@
-﻿# UC300 IoT Controller (Cellular Version)
+﻿# Milesight - UC300 IoT Controller Decoder (Cellular Version)
 
 ## features: (currently aimed for Regular Report (F4) Uplink Payload)
 
