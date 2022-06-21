@@ -139,35 +139,35 @@ test("getDigitalOutputToggles", () => {
 });
 
 test("getDataSize", () => {
-  expect(getDataSize("Coil")).toBe(1);
-  expect(getDataSize("Discrete")).toBe(1);
-  expect(getDataSize("Input16")).toBe(2);
-  expect(getDataSize("Hold16")).toBe(2);
-  expect(getDataSize("Hold32")).toBe(4);
-  expect(getDataSize("Hold_float")).toBe(4);
-  expect(getDataSize("Input32")).toBe(4);
-  expect(getDataSize("Input_float")).toBe(4);
-  expect(getDataSize("Input_int32_with upper 16 bits")).toBe(4);
-  expect(getDataSize("Input_int32_with lower 16 bits")).toBe(4);
-  expect(getDataSize("Hold_int32_with upper 16 bits")).toBe(4);
-  expect(getDataSize("Hold_int32_with lower 16 bits")).toBe(4);
-  expect(getDataSize("")).toBe(-1);
-  expect(getDataSize("Something")).toBe(-1);
+  expect(getDataSize(0)).toBe(1);
+  expect(getDataSize(1)).toBe(1);
+  expect(getDataSize(2)).toBe(2);
+  expect(getDataSize(3)).toBe(2);
+  expect(getDataSize(4)).toBe(4);
+  expect(getDataSize(5)).toBe(4);
+  expect(getDataSize(6)).toBe(4);
+  expect(getDataSize(7)).toBe(4);
+  expect(getDataSize(8)).toBe(4);
+  expect(getDataSize(9)).toBe(4);
+  expect(getDataSize(0xa)).toBe(4);
+  expect(getDataSize(0xb)).toBe(4);
+  expect(getDataSize(0xc)).toBe(-1);
+  expect(getDataSize()).toBe(-1);
 });
 
 test("getParser", () => {
-  expect(getParser("Coil")).toBe(readInt8LE);
-  expect(getParser("Discrete")).toBe(readInt8LE);
-  expect(getParser("Input16")).toBe(readInt16LE);
-  expect(getParser("Hold16")).toBe(readInt16LE);
-  expect(getParser("Hold32")).toBe(readInt32LE);
-  expect(getParser("Hold_float")).toBe(readFloatLE);
-  expect(getParser("Input32")).toBe(readInt32LE);
-  expect(getParser("Input_float")).toBe(readFloatLE);
-  expect(getParser("Input_int32_with upper 16 bits")).toBe(readInt32LE);
-  expect(getParser("Input_int32_with lower 16 bits")).toBe(readInt32LE);
-  expect(getParser("Hold_int32_with upper 16 bits")).toBe(readInt32LE);
-  expect(getParser("Hold_int32_with lower 16 bits")).toBe(readInt32LE);
+  expect(getParser(0)).toBe(readInt8LE);
+  expect(getParser(1)).toBe(readInt8LE);
+  expect(getParser(2)).toBe(readInt16LE);
+  expect(getParser(3)).toBe(readInt16LE);
+  expect(getParser(4)).toBe(readInt32LE);
+  expect(getParser(5)).toBe(readFloatLE);
+  expect(getParser(6)).toBe(readInt32LE);
+  expect(getParser(7)).toBe(readFloatLE);
+  expect(getParser(8)).toBe(readInt32LE);
+  expect(getParser(9)).toBe(readInt32LE);
+  expect(getParser(0xa)).toBe(readInt32LE);
+  expect(getParser(0xb)).toBe(readInt32LE);
   // expect(getParser("")).toEqual(() => {});
 });
 
@@ -239,6 +239,7 @@ test("decode case 3", () => {
   const rawData = "7EF418000A7A8057621100000000022A150020001021007E";
   const bytes = Buffer.from(rawData, "hex");
   let output = decode(bytes);
+  //console.log(JSON.stringify(output, null, 2));
   expect(output.data_type).toBe("f4");
   expect(output.packet_length).toBe(24);
   expect(output.packet_version).toBe(10);
@@ -261,11 +262,11 @@ test("decode case 3", () => {
   expect(output.toggles_of_analog_inputs[5].toggle).toBe(0);
   modbus = output.modbus;
   expect(modbus[0].channel_id).toBe(1);
-  expect(modbus[0].status).toBe("collected successfully");
-  expect(modbus[0].data).toStrictEqual([21, 32]);
+  expect(modbus[0].register_setting.status).toBe(1);
+  expect(modbus[0].data).toEqual([21, 32]);
   expect(modbus[1].channel_id).toBe(2);
-  expect(modbus[1].status).toBe("collected failed");
-  expect(modbus[1].data).toStrictEqual([0]);
+  expect(modbus[1].register_setting.status).toBe(0);
+  expect(modbus[1].data).toEqual([0]);
 });
 
 test("decode case 4", () => {

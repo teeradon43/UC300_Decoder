@@ -411,55 +411,43 @@ function isStopByte(bytes) {
 }
 
 function getModbusChannelDataType(byte) {
-  let DataType = { ...DATA_TYPE_TEMPLATE };
   let channelId = ((byte >> 4) & 0xf) + 1;
-  let dataTypeBit = byte & 0xf;
-  let dataType = "";
-  if (dataTypeBit > 11) {
-    dataType = "ERROR";
-  } else {
-    dataType = DataType[dataTypeBit];
+  let dataType = byte & 0xf;
+  if (dataType > 11 || dataType < 0) {
+    dataType = ERROR;
   }
   return { channelId, dataType };
 }
 
 function isValidDataType(dataType) {
-  return dataType !== "ERROR";
+  return dataType !== ERROR;
 }
 
 function getModbusRegisterSetting(byte) {
   let sign = (byte >> 7) & 1;
   let decimal = (byte >> 4) & 0b111;
-  let status =
-    ((byte >> 3) & 1) == 0 ? "collected failed" : "collected successfully";
+  let status = (byte >> 3) & 1;
   let quantity = byte & 0b111;
   return { sign, decimal, status, quantity };
 }
 
 function getDataSize(dataType) {
-  switch (dataType) {
+  const DATA_TYPE = { ...DATA_TYPE_TEMPLATE };
+  switch (DATA_TYPE[dataType]) {
     case "Coil":
-      return 1;
     case "Discrete":
       return 1;
     case "Input16":
-      return 2;
     case "Hold16":
       return 2;
     case "Hold32":
-      return 4;
     case "Hold_float":
       return 4;
     case "Input32":
-      return 4;
     case "Input_float":
-      return 4;
     case "Input_int32_with upper 16 bits":
-      return 4;
     case "Input_int32_with lower 16 bits":
-      return 4;
     case "Hold_int32_with upper 16 bits":
-      return 4;
     case "Hold_int32_with lower 16 bits":
       return 4;
     default:
@@ -468,31 +456,30 @@ function getDataSize(dataType) {
 }
 
 function getParser(dataType) {
-  switch (dataType) {
+  const DATA_TYPE = { ...DATA_TYPE_TEMPLATE };
+  switch (DATA_TYPE[dataType]) {
     case "Coil":
-      return readInt8LE;
     case "Discrete":
       return readInt8LE;
+
     case "Input16":
-      return readInt16LE;
     case "Hold16":
       return readInt16LE;
+
+    case "Input32":
     case "Hold32":
       return readInt32LE;
+
     case "Hold_float":
-      return readFloatLE;
-    case "Input32":
-      return readInt32LE;
     case "Input_float":
       return readFloatLE;
+
     case "Input_int32_with upper 16 bits":
-      return readInt32LE;
     case "Input_int32_with lower 16 bits":
-      return readInt32LE;
     case "Hold_int32_with upper 16 bits":
-      return readInt32LE;
     case "Hold_int32_with lower 16 bits":
       return readInt32LE;
+
     default:
       return () => {}; // TODO: Invalid DataType Function()=>{return rawData(hex)}
   }
@@ -644,7 +631,9 @@ function decode(bytes) {
     if (!MB.isValidType(dataType)) {
       break;
     }
-    let { status, quantity } = MB.getRegisterSetting(reader.read(1));
+    let { sign, decimal, status, quantity } = MB.getRegisterSetting(
+      reader.read(1)
+    );
     let dataSize = MB.getDataSize(dataType);
     let parser = MB.getParser(dataType);
     let data = [];
@@ -655,8 +644,12 @@ function decode(bytes) {
     modbus.push({
       channel_id: channelId,
       data_type: dataType,
-      status: status,
-      quantity: quantity,
+      register_setting: {
+        sign: sign,
+        decimal: decimal,
+        status: status,
+        quantity: quantity,
+      },
       data: data,
     });
   }
