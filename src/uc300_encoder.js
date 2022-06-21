@@ -1,6 +1,20 @@
 /******** Constants ********/
 const START_BYTE = "7e";
 const STOP_BYTE = "7e";
+const DATA_TYPE_TEMPLATE = {
+  0: "Coil",
+  1: "Discrete",
+  2: "Input16",
+  3: "Hold16",
+  4: "Hold32",
+  5: "Hold_float",
+  6: "Input32",
+  7: "Input_float",
+  8: "Input_int32_with upper 16 bits",
+  9: "Input_int32_with lower 16 bits",
+  10: "Hold_int32_with upper 16 bits",
+  11: "Hold_int32_with lower 16 bits",
+};
 /***********************************/
 
 /******** Data Transform ********/
@@ -36,18 +50,18 @@ function reverseHex(hexString) {
   return str.join("");
 }
 
-function NumToHexString(value, numberOfByte = 1) {
+function DecToHexString(value, numberOfBytes = 1) {
   let hexString = value.toString(16);
-  hexString = hexString.padStart(numberOfByte * 2, "0");
+  hexString = hexString.padStart(numberOfBytes * 2, "0");
   return hexString;
 }
 
-function FloatToHexString(value) {
+function FloatToHexString(value, numberOfBytes = 4) {
   //https://stackoverflow.com/a/47187116
-  let view = new DataView(new ArrayBuffer(4)),
+  let view = new DataView(new ArrayBuffer(numberOfBytes)),
     result;
   view.setFloat32(0, value);
-  result = Array.apply(null, { length: 4 })
+  result = Array.apply(null, { length: numberOfBytes })
     .map((_, i) => view.getUint8(i).toString(16))
     .join("");
   result = result.padEnd(8, "0");
@@ -57,22 +71,22 @@ function FloatToHexString(value) {
 
 /******** Get Hex from Data ********/
 function getPacketLengthHex(value) {
-  let hexString = NumToHexString(value, 2);
+  let hexString = DecToHexString(value, 2);
   return reverseHex(hexString);
 }
 
 function getPacketVersionHex(value) {
-  return NumToHexString(value, 1);
+  return DecToHexString(value, 1);
 }
 
 function getTimestampHex(dateString) {
   let dateNum = Number(new Date(dateString)) / 1000;
-  let hexString = NumToHexString(dateNum, 4);
+  let hexString = DecToHexString(dateNum, 4);
   return reverseHex(hexString);
 }
 
 function getSignalStrengthHex(value) {
-  return NumToHexString(value, 1);
+  return DecToHexString(value, 1);
 }
 
 function getDigitalOutputTogglesHex(digitalOutputToggles) {
@@ -81,7 +95,7 @@ function getDigitalOutputTogglesHex(digitalOutputToggles) {
     if (toggles.name === "DO1") result += toggles.toggle;
     else if (toggles.name === "DO2") result += toggles.toggle * 2;
   }
-  return NumToHexString(result, 1);
+  return DecToHexString(result, 1);
 }
 
 function getDigitalOutputStatusesHex(digitalOutputStatuses) {
@@ -93,7 +107,7 @@ function getDigitalOutputStatusesHex(digitalOutputStatuses) {
     if (statuses.name === "DO1") result += statuses.status;
     else if (statuses.name === "DO2") result += statuses.status * 2;
   }
-  return NumToHexString(result, 1);
+  return DecToHexString(result, 1);
 }
 
 function getDigitalInputTogglesHex(digitalInputToggles) {
@@ -101,7 +115,7 @@ function getDigitalInputTogglesHex(digitalInputToggles) {
   for (const index in digitalInputToggles) {
     result += digitalInputToggles[index].toggle << (2 * index);
   }
-  return NumToHexString(result, 1);
+  return DecToHexString(result, 1);
 }
 
 function getDigitalInputStatusesHex(digitalInputStatuses) {
@@ -110,7 +124,7 @@ function getDigitalInputStatusesHex(digitalInputStatuses) {
     if (digitalInputStatuses[index].status == null) return "";
     result += digitalInputStatuses[index].status << index;
   }
-  return NumToHexString(result, 1);
+  return DecToHexString(result, 1);
 }
 
 function getDigitalInputCountersHex(digitalInputCounter) {
@@ -118,7 +132,7 @@ function getDigitalInputCountersHex(digitalInputCounter) {
   let hexString = "";
   for (const { counter } of digitalInputCounter) {
     if (counter != null) {
-      hexString = NumToHexString(counter, 4);
+      hexString = DecToHexString(counter, 4);
       result += reverseHex(hexString);
     }
   }
@@ -135,7 +149,7 @@ function getAnalogInputTogglesHex(analogInputToggles) {
   for (let index = 4; index < 6; index++) {
     result += analogInputToggles[index].toggle << ((index - 4) * 2);
   }
-  return NumToHexString(result, 2);
+  return DecToHexString(result, 2);
 }
 
 function getAnalogInputValuesHex(analogInputValues) {
@@ -149,6 +163,76 @@ function getAnalogInputValuesHex(analogInputValues) {
   }
   return result;
 }
+
+function getDataSize(dataType) {
+  const DATA_TYPE = { ...DATA_TYPE_TEMPLATE };
+  switch (DATA_TYPE[dataType]) {
+    case "Coil":
+    case "Discrete":
+      return 1;
+    case "Input16":
+    case "Hold16":
+      return 2;
+    case "Hold32":
+    case "Hold_float":
+      return 4;
+    case "Input32":
+    case "Input_float":
+    case "Input_int32_with upper 16 bits":
+    case "Input_int32_with lower 16 bits":
+    case "Hold_int32_with upper 16 bits":
+    case "Hold_int32_with lower 16 bits":
+      return 4;
+    default:
+      return -1;
+  }
+}
+
+function getParser(dataType) {
+  const DATA_TYPE = { ...DATA_TYPE_TEMPLATE };
+  switch (DATA_TYPE[dataType]) {
+    case "Coil":
+    case "Discrete":
+    case "Input16":
+    case "Hold16":
+    case "Input32":
+    case "Hold32":
+    case "Input_int32_with upper 16 bits":
+    case "Input_int32_with lower 16 bits":
+    case "Hold_int32_with upper 16 bits":
+    case "Hold_int32_with lower 16 bits":
+      return DecToHexString;
+
+    case "Hold_float":
+    case "Input_float":
+      return FloatToHexString;
+
+    default:
+      return;
+  }
+}
+
+function getModbusHex(modbusArray) {
+  let result = "";
+  if (modbusArray.length == 0) return result;
+  for (const modbus of modbusArray) {
+    let channelDataByte = (modbus.channel_id << 4) + modbus.data_type;
+    result += DecToHexString(channelDataByte);
+    let registerSettingByte =
+      (modbus.register_setting.sign << 7) +
+      (modbus.register_setting.decimal << 4) +
+      (modbus.register_setting.status << 3) +
+      modbus.register_setting.quantity;
+    result += DecToHexString(registerSettingByte);
+    let dataSize = getDataSize(modbus.data_type);
+    let parser = getParser(modbus.data_type);
+    for (let i = 0; i < modbus.register_setting.quantity; i++) {
+      result += parser(modbus.data[i], dataSize);
+    }
+  }
+  return result;
+}
+
 /***********************************/
 
 /******** Decoration Pattern ********/
@@ -178,4 +262,5 @@ module.exports = {
   getDigitalInputCountersHex,
   getAnalogInputTogglesHex,
   getAnalogInputValuesHex,
+  getModbusHex,
 };

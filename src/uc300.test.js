@@ -261,10 +261,10 @@ test("decode case 3", () => {
   expect(output.toggles_of_analog_inputs[4].toggle).toBe(0);
   expect(output.toggles_of_analog_inputs[5].toggle).toBe(0);
   modbus = output.modbus;
-  expect(modbus[0].channel_id).toBe(1);
+  expect(modbus[0].channel_id).toBe(0);
   expect(modbus[0].register_setting.status).toBe(1);
   expect(modbus[0].data).toEqual([21, 32]);
-  expect(modbus[1].channel_id).toBe(2);
+  expect(modbus[1].channel_id).toBe(1);
   expect(modbus[1].register_setting.status).toBe(0);
   expect(modbus[1].data).toEqual([0]);
 });

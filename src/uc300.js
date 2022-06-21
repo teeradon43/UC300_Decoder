@@ -411,7 +411,7 @@ function isStopByte(bytes) {
 }
 
 function getModbusChannelDataType(byte) {
-  let channelId = ((byte >> 4) & 0xf) + 1;
+  let channelId = (byte >> 4) & 0xf;
   let dataType = byte & 0xf;
   if (dataType > 11 || dataType < 0) {
     dataType = ERROR;

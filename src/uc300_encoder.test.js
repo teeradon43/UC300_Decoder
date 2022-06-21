@@ -12,6 +12,7 @@ const {
   getDigitalInputCountersHex,
   getAnalogInputTogglesHex,
   getAnalogInputValuesHex,
+  getModbusHex,
 } = require("./uc300_encoder");
 
 const { decode } = require("./uc300");
@@ -260,17 +261,36 @@ test("getAnalogInputValuesHex", () => {
 
 const MODBUS_TEMPLATE = [];
 
-// test("getModbusHex", () => {
-//   let modbus = [...MODBUS_TEMPLATE];
-//   expect(getModbusHex(modbus)).toBe("");
-//   modbus[0].channel_id = 1;
-//   modbus[0].data_type = "Input16";
-//   modbus[0].status = "collected successfully";
-//   modbus[0].quantity = 1;
-//   modbus[0].data = [16];
-
-//   expect(getModbusHex(modbus)).toBe("02");
-// });
+test("getModbusHex", () => {
+  let modbus = [...MODBUS_TEMPLATE];
+  expect(getModbusHex(modbus)).toBe("");
+  let ch1Data = {
+    channel_id: 0,
+    data_type: 0,
+    register_setting: {
+      sign: 0,
+      decimal: 1,
+      status: 1,
+      quantity: 1,
+    },
+    data: [1],
+  };
+  modbus.push(ch1Data);
+  expect(getModbusHex(modbus)).toBe("001901");
+  let ch2Data = {
+    channel_id: 1,
+    data_type: 1,
+    register_setting: {
+      sign: 1,
+      decimal: 1,
+      status: 0,
+      quantity: 1,
+    },
+    data: [0],
+  };
+  modbus.push(ch2Data);
+  expect(getModbusHex(modbus)).toBe("001901119100");
+});
 
 const MESSAGE_TEMPLATE = {
   data_type: "",
