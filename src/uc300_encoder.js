@@ -8,7 +8,7 @@ function encode(payload) {
   let output = "";
   output += START_BYTE;
   output += "f4";
-  output += getPacketLengthHex(payload.packet_length);
+  output += getPacketLengthHex(payload.packet_length); //TODO: Count Actual Bytes
   output += getPacketVersionHex(payload.packet_version);
   output += getTimestampHex(payload.timestamp);
   output += getSignalStrengthHex(payload.signal_strength);
@@ -19,6 +19,7 @@ function encode(payload) {
   output += DI.getCounterHex(payload.di_counters);
   output += AI.getTogglesHex(payload.toggles_of_analog_inputs);
   output += AI.getValuesHex(payload.analog_input_values);
+  //TODO: Encode Modbus
   output += STOP_BYTE;
   return output;
 }

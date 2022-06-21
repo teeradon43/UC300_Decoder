@@ -258,38 +258,69 @@ test("getAnalogInputValuesHex", () => {
   );
 });
 
-const MODBUS_TEMPLATE = [];
+const MODBUS_TEMPLATE = [
+  {
+    channel_id: null,
+    data_type: "",
+    status: "",
+    quantity: null,
+    data: [],
+  },
+];
 
-// test("getModbusHex", () => {
-//   let modbus = [...MODBUS_TEMPLATE];
-//   expect(getModbusHex(modbus)).toBe("");
-// });
+test("getModbusHex", () => {
+  let modbus = [...MODBUS_TEMPLATE];
+  modbus[0].channel_id = 1;
+  modbus[0].data_type = "Input16";
+  modbus[0].status = "collected successfully";
+  modbus[0].quantity = 1;
+  modbus[0].data = [16];
 
-test("encode case 1", () => {
-  const rawData = "7EF40F000A7A80576214000000007E";
-  const bytes = Buffer.from(rawData, "hex");
-  message = decode(bytes);
-  output = encode(message);
-  expect(output).toBe("7ef40f000a7a80576214000000007e");
+  expect(getModbusHex(modbus)).toBe("");
 });
 
-test("encode case 2", () => {
-  const rawData =
-    "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
-  const bytes = Buffer.from(rawData, "hex");
-  message = decode(bytes);
-  output = encode(message);
-  expect(output).toBe(
-    "7ef425000a7a805762110301d80000000000150000000105000000009a99d941000000007e"
-  );
-});
+const MESSAGE_TEMPLATE = {
+  data_type: "",
+  packet_length: null,
+  packet_version: null,
+  timestamp: "",
+  signal_strength: null,
+  toggles_of_digital_outputs: [],
+  digital_output_statuses: [],
+  toggles_of_digital_inputs: [],
+  digital_input_statuses: [],
+  di_counters: [],
+  toggles_of_analog_inputs: [],
+  analog_input_values: [],
+  modbus: [],
+};
 
-// test("encode case 3", () => {
-//   const rawData = "7EF418000A7A8057621100000000022A150020001021007E";
+// test("encode case 1", () => {
+//   const rawData = "7EF40F000A7A80576214000000007E";
 //   const bytes = Buffer.from(rawData, "hex");
-//   message = decode(bytes);
-//   console.log(message);
-//   output = encode(message);
-//   expect(output).toBe("7ef418000a7a80576211000000007e");
-//   // expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
+//   let message = decode(bytes);
+//   console.log(decode(bytes));
+//   let output = encode(message);
+//   expect(output).toBe("7ef40f000a7a80576214000000007e");
 // });
+
+// test("encode case 2", () => {
+//   let rawData =
+//     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
+//   let bytes = Buffer.from(rawData, "hex");
+//   let message = decode(bytes);
+//   let output = encode(message);
+//   expect(output).toBe(
+//     "7ef425000a7a805762110301d80000000000150000000105000000009a99d941000000007e"
+//   );
+// });
+
+test("encode case 3", () => {
+  let rawData = "7EF418000A7A8057621100000000022A150020001021007E";
+  let bytes = Buffer.from(rawData, "hex");
+  let message = decode(bytes);
+  // console.log(message);
+  let output = encode(message);
+  expect(output).toBe("7ef418000a7a80576211000000007e");
+  // expect(output).toBe("7ef418000a7a8057621100000000022a150020001021007e");
+});

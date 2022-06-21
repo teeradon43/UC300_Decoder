@@ -105,7 +105,7 @@ const OUTPUT_TEMPLATE = {
   di_counters: [...DIGITAL_COUNTER_TEMPLATE],
   toggles_of_analog_inputs: [...ANALOG_INPUT_TOGGLE_TEMPLATE],
   analog_input_values: [...ANALOG_INPUT_VALUE_TEMPLATE],
-  modbus: {},
+  modbus: [],
 };
 
 /* ******************************************
@@ -590,7 +590,7 @@ function decode(bytes) {
     BYTE_LENGTH;
 
   let reader = Reader(bytes);
-  reader.skip(1); // skip start byte
+  reader.skip(1);
 
   output.data_type = getDataType(reader.read(1));
   output.packet_length = getPacketLength(reader.read(PACKET_LENGTH));
@@ -632,6 +632,8 @@ function decode(bytes) {
   output.toggles_of_analog_inputs = togglesOfAnalogInput;
 
   // modbus
+  // TODO: Change DataType From String to Number
+  // TODO: Show All Register Setting to be able to encode correctly
   let modbus = [];
   while (reader.hasNext()) {
     let channelByte = reader.read(1);
@@ -659,7 +661,6 @@ function decode(bytes) {
     });
   }
   output.modbus = modbus;
-
   return output;
 
   function getDataType(bytes) {

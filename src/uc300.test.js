@@ -39,37 +39,37 @@ test("getDigitalInputMode", () => {
 });
 
 test("getDigitalInput", () => {
-  di0 = getDigitalInput(0x00);
+  let di0 = getDigitalInput(0x00);
   expect(di0[0].status).toBe(0);
   expect(di0[1].status).toBe(0);
   expect(di0[2].status).toBe(0);
   expect(di0[3].status).toBe(0);
-  di1 = getDigitalInput(0x01);
+  let di1 = getDigitalInput(0x01);
   expect(di0[0].status).toBe(1);
   expect(di0[1].status).toBe(0);
   expect(di0[2].status).toBe(0);
   expect(di0[3].status).toBe(0);
-  di2 = getDigitalInput(0x03);
+  let di2 = getDigitalInput(0x03);
   expect(di0[0].status).toBe(1);
   expect(di0[1].status).toBe(1);
   expect(di0[2].status).toBe(0);
   expect(di0[3].status).toBe(0);
-  di3 = getDigitalInput(0x07);
+  let di3 = getDigitalInput(0x07);
   expect(di0[0].status).toBe(1);
   expect(di0[1].status).toBe(1);
   expect(di0[2].status).toBe(1);
   expect(di0[3].status).toBe(0);
-  di4 = getDigitalInput(0x0f);
+  let di4 = getDigitalInput(0x0f);
   expect(di0[0].status).toBe(1);
   expect(di0[1].status).toBe(1);
   expect(di0[2].status).toBe(1);
   expect(di0[3].status).toBe(1);
-  di5 = getDigitalInput(0x10);
+  let di5 = getDigitalInput(0x10);
   expect(di0[0].status).toBe(-1);
   expect(di0[1].status).toBe(-1);
   expect(di0[2].status).toBe(-1);
   expect(di0[3].status).toBe(-1);
-  di6 = getDigitalInput(0xff);
+  let di6 = getDigitalInput(0xff);
   expect(di0[0].status).toBe(-1);
   expect(di0[1].status).toBe(-1);
   expect(di0[2].status).toBe(-1);
@@ -98,7 +98,7 @@ test("getDigitalCounter", () => {
   ];
   const rawData = "0000000015000000";
   const bytes = Buffer.from(rawData, "hex");
-  output = getDigitalCounter(counterToggle, bytes);
+  let output = getDigitalCounter(counterToggle, bytes);
   expect(output[0].counter).toBe(null);
   expect(output[1].counter).toBe(0);
   expect(output[2].counter).toBe(null);
@@ -106,7 +106,7 @@ test("getDigitalCounter", () => {
 });
 
 test("getDigitalOutputToggles", () => {
-  output = getDigitalOutputToggles(0x00);
+  let output = getDigitalOutputToggles(0x00);
   expect(output[0].name).toBe("DO1");
   expect(output[0].toggle).toBe(0);
   expect(output[1].name).toBe("DO2");
@@ -174,7 +174,7 @@ test("getParser", () => {
 test("decode case 1", () => {
   const rawData = "7EF40F000A7A80576214000000007E";
   const bytes = Buffer.from(rawData, "hex");
-  output = decode(bytes);
+  let output = decode(bytes);
   expect(output.data_type).toBe("f4");
   expect(output.packet_length).toBe(15);
   expect(output.packet_version).toBe(10);
@@ -200,7 +200,7 @@ test("decode case 2", () => {
   const rawData =
     "7EF425000A7A805762110301D80000000000150000000105000000009A99D941000000007E";
   const bytes = Buffer.from(rawData, "hex");
-  output = decode(bytes);
+  let output = decode(bytes);
   expect(output.data_type).toBe("f4");
   expect(output.packet_length).toBe(37);
   expect(output.packet_version).toBe(10);
@@ -238,7 +238,7 @@ test("decode case 2", () => {
 test("decode case 3", () => {
   const rawData = "7EF418000A7A8057621100000000022A150020001021007E";
   const bytes = Buffer.from(rawData, "hex");
-  output = decode(bytes);
+  let output = decode(bytes);
   expect(output.data_type).toBe("f4");
   expect(output.packet_length).toBe(24);
   expect(output.packet_version).toBe(10);
@@ -272,5 +272,5 @@ test("decode case 4", () => {
   const rawData =
     "7ef47f000a2a89906219030055005505000000000000000000000000000000000000000000000000003901113901223901803339018046b90180ffff56b90180ffff66b90180ffff76b90180ffff87b925529ac497b925529ac4a7b925529ac4b7b925529ac4c4b90180ffffd4b90180ffffe4b90180fffff4b90180ffff7e";
   const bytes = Buffer.from(rawData, "hex");
-  output = decode(bytes);
+  let output = decode(bytes);
 });
