@@ -479,9 +479,6 @@ function getParser(dataType) {
     case "Hold_int32_with upper 16 bits":
     case "Hold_int32_with lower 16 bits":
       return readInt32LE;
-
-    default:
-      return () => {}; // TODO: Invalid DataType Function()=>{return rawData(hex)}
   }
 }
 
