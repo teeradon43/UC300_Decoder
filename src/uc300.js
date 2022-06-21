@@ -117,7 +117,7 @@ function readUInt8LE(byte) {
 }
 
 function readInt8LE(byte) {
-  let ref = readUInt8LE(byte);
+  let ref = readUInt8LE(byte[0]);
   return ref > 0x7f ? ref - 0x100 : ref;
 }
 
@@ -637,9 +637,11 @@ function decode(bytes) {
     let dataSize = MB.getDataSize(dataType);
     let parser = MB.getParser(dataType);
     let data = [];
+    let dataHex = [];
     for (let i = 0; i < quantity; i++) {
       let mBytes = reader.read(dataSize);
       data.push(parser(mBytes));
+      dataHex.push(mBytes);
     }
     modbus.push({
       channel_id: channelId,
@@ -651,6 +653,7 @@ function decode(bytes) {
         quantity: quantity,
       },
       data: data,
+      dataHex: dataHex,
     });
   }
   output.modbus = modbus;
@@ -665,7 +668,7 @@ function decode(bytes) {
   }
 
   function getPacketVersion(bytes) {
-    return readInt8LE(bytes[0]);
+    return readInt8LE(bytes);
   }
 
   function getTimeStamp(bytes) {
@@ -673,7 +676,7 @@ function decode(bytes) {
   }
 
   function getSignalStrength(bytes) {
-    return readInt8LE(bytes[0]);
+    return readInt8LE(bytes);
   }
 }
 
