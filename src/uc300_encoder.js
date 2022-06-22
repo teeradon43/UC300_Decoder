@@ -19,22 +19,23 @@ const DATA_TYPE_TEMPLATE = {
 
 /******** Data Transform ********/
 function encode(payload) {
-  let output = "";
-  output += START_BYTE;
-  output += "f4";
-  output += getPacketLengthHex(payload.packet_length); //TODO: Count Actual Bytes
-  output += getPacketVersionHex(payload.packet_version);
-  output += getTimestampHex(payload.timestamp);
-  output += getSignalStrengthHex(payload.signal_strength);
-  output += DO.getTogglesHex(payload.toggles_of_digital_outputs);
-  output += DO.getStatusesHex(payload.digital_output_statuses);
-  output += DI.getTogglesHex(payload.toggles_of_digital_inputs);
-  output += DI.getStatusesHex(payload.digital_input_statuses);
-  output += DI.getCounterHex(payload.di_counters);
-  output += AI.getTogglesHex(payload.toggles_of_analog_inputs);
-  output += AI.getValuesHex(payload.analog_input_values);
-  output += MB.getHex(payload.modbus);
-  output += STOP_BYTE;
+  let output = [];
+  output.push("7e");
+  output.push("f4");
+  output.push("0000");
+  output.push(getPacketVersionHex(payload.packet_version));
+  output.push(getTimestampHex(payload.timestamp));
+  output.push(getSignalStrengthHex(payload.signal_strength));
+  output.push(DO.getTogglesHex(payload.toggles_of_digital_outputs));
+  output.push(DO.getStatusesHex(payload.digital_output_statuses));
+  output.push(DI.getTogglesHex(payload.toggles_of_digital_inputs));
+  output.push(DI.getStatusesHex(payload.digital_input_statuses));
+  output.push(DI.getCounterHex(payload.di_counters));
+  output.push(AI.getTogglesHex(payload.toggles_of_analog_inputs));
+  output.push(AI.getValuesHex(payload.analog_input_values));
+  output.push(MB.getHex(payload.modbus));
+  output.push("7e");
+  output[2] = getPacketLengthHex(output);
   return output;
 }
 
@@ -106,8 +107,9 @@ function FloatToHexString(value, numberOfBytes = 4) {
 /***********************************/
 
 /******** Get Hex from Data ********/
-function getPacketLengthHex(value) {
-  return DecToHexString(value, 2);
+function getPacketLengthHex(bytes) {
+  let length = bytes.join("").length / 2;
+  return DecToHexString(length, 2);
 }
 
 function getPacketVersionHex(value) {
