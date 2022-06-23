@@ -13,7 +13,7 @@ const {
   readInt16LE,
   readInt32LE,
   readFloatLE,
-} = require("./uc300");
+} = require("../js/uc300");
 
 test("getDigitalOutputStatuses", () => {
   expect(getDigitalOutputStatuses(0x00)[0].status).toBe(0);
