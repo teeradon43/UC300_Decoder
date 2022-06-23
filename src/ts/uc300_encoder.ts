@@ -52,40 +52,40 @@ const encode = (payload: IPayload) => {
 /***********************************/
 
 /******** Data Transform ********/
-function reverseHex(hexString: string) {
+const reverseHex = (hexString: string) => {
   let str: string[] = [];
   for (let i = 0, charsLength = hexString.length; i < charsLength; i += 2) {
     str.push(hexString.substring(i, i + 2));
   }
   str.reverse();
   return str.join("");
-}
+};
 
-function Int8ToHexString(value: number) {
+const Int8ToHexString = (value: number) => {
   if (value < 0) {
     value = 0x100 + value;
   }
   let hexString = value.toString(16);
   return hexString.padStart(2, "0");
-}
+};
 
-function Int16ToHexString(value: number) {
+const Int16ToHexString = (value: number) => {
   if (value < 0) {
     value = 0x10000 + value;
   }
   let hexString = value.toString(16);
   return hexString.padStart(4, "0");
-}
+};
 
-function Int32ToHexString(value: number) {
+const Int32ToHexString = (value: number) => {
   if (value < 0) {
     value = 0x100000000 + value;
   }
   let hexString = value.toString(16);
   return hexString.padStart(8, "0");
-}
+};
 
-function DecToHexString(value: number, numberOfBytes: number = 1) {
+const DecToHexString = (value: number, numberOfBytes: number = 1) => {
   let hexString = "";
   switch (numberOfBytes) {
     case 1:
@@ -101,9 +101,9 @@ function DecToHexString(value: number, numberOfBytes: number = 1) {
       hexString = Int8ToHexString(value);
   }
   return reverseHex(hexString);
-}
+};
 
-function FloatToHexString(value: number, numberOfBytes: number = 4) {
+const FloatToHexString = (value: number, numberOfBytes: number = 4) => {
   //https://stackoverflow.com/a/47187116
   let view = new DataView(new ArrayBuffer(numberOfBytes));
   let arr = new Array<string>(numberOfBytes);
@@ -116,41 +116,41 @@ function FloatToHexString(value: number, numberOfBytes: number = 4) {
   result = arr.join("");
   result = result.padEnd(8, "0");
   return reverseHex(result);
-}
+};
 /***********************************/
 
 /******** Get Hex from Data ********/
-function getPacketLengthHex(bytes: string[]) {
+const getPacketLengthHex = (bytes: string[]) => {
   let length = bytes.join("").length / 2;
   return DecToHexString(length, 2);
-}
+};
 
-function getPacketVersionHex(value: number) {
+const getPacketVersionHex = (value: number) => {
   return DecToHexString(value, 1);
-}
+};
 
-function getTimestampHex(dateString: string) {
+const getTimestampHex = (dateString: string) => {
   let dateNum = Number(new Date(dateString)) / 1000;
   return DecToHexString(dateNum, 4);
-}
+};
 
-function getSignalStrengthHex(value: number) {
+const getSignalStrengthHex = (value: number) => {
   return DecToHexString(value, 1);
-}
+};
 
-function getDigitalOutputTogglesHex(
+const getDigitalOutputTogglesHex = (
   digitalOutputToggles: IDigitalOutputToggles[]
-) {
+) => {
   let result = 0;
   for (let index = 0; index < digitalOutputToggles.length; index++) {
     result += digitalOutputToggles[index].toggle << index;
   }
   return DecToHexString(result, 1);
-}
+};
 
-function getDigitalOutputStatusesHex(
+const getDigitalOutputStatusesHex = (
   digitalOutputStatuses: IDigitalOutputStatuses[]
-) {
+) => {
   let result = 0;
   for (let index = 0; index < digitalOutputStatuses.length; index++) {
     if (digitalOutputStatuses[index].status == null) {
@@ -160,21 +160,21 @@ function getDigitalOutputStatusesHex(
     result += digitalOutputStatuses[index].status << index;
   }
   return DecToHexString(result, 1);
-}
+};
 
-function getDigitalInputTogglesHex(
+const getDigitalInputTogglesHex = (
   digitalInputToggles: IDigitalInputToggles[]
-) {
+) => {
   let result = 0;
   for (let index = 0; index < digitalInputToggles.length; index++) {
     result += digitalInputToggles[index].toggle << (index * 2);
   }
   return DecToHexString(result, 1);
-}
+};
 
-function getDigitalInputStatusesHex(
+const getDigitalInputStatusesHex = (
   digitalInputStatuses: IDigitalInputStatuses[]
-) {
+) => {
   let result = 0;
   for (let index = 0; index < digitalInputStatuses.length; index++) {
     if (digitalInputStatuses[index].status == null) {
@@ -184,11 +184,11 @@ function getDigitalInputStatusesHex(
     result += digitalInputStatuses[index].status << index;
   }
   return DecToHexString(result, 1);
-}
+};
 
-function getDigitalInputCountersHex(
+const getDigitalInputCountersHex = (
   digitalInputCounter: IDigitalInputCounters[]
-) {
+) => {
   let result = "";
   for (const { counter } of digitalInputCounter) {
     if (counter != null) {
@@ -196,9 +196,11 @@ function getDigitalInputCountersHex(
     }
   }
   return result;
-}
+};
 
-function getAnalogInputTogglesHex(analogInputToggles: IAnalogInputToggles[]) {
+const getAnalogInputTogglesHex = (
+  analogInputToggles: IAnalogInputToggles[]
+) => {
   let result = 0;
   for (let index = 0; index < 4; index++) {
     result += analogInputToggles[index].toggle << (index * 2);
@@ -208,9 +210,9 @@ function getAnalogInputTogglesHex(analogInputToggles: IAnalogInputToggles[]) {
     result += analogInputToggles[index].toggle << ((index - 4) * 2);
   }
   return reverseHex(DecToHexString(result, 2));
-}
+};
 
-function getAnalogInputValuesHex(analogInputValues: IAnalogInputValues[]) {
+const getAnalogInputValuesHex = (analogInputValues: IAnalogInputValues[]) => {
   let result = "";
   for (const { value } of analogInputValues) {
     if (value != null) {
@@ -218,9 +220,9 @@ function getAnalogInputValuesHex(analogInputValues: IAnalogInputValues[]) {
     }
   }
   return result;
-}
+};
 
-function getDataSize(dataType: number) {
+const getDataSize = (dataType: number) => {
   const DATA_TYPE = { ...DATA_TYPE_TEMPLATE };
   switch (DATA_TYPE[dataType]) {
     case "Coil":
@@ -242,9 +244,9 @@ function getDataSize(dataType: number) {
     default:
       return -1;
   }
-}
+};
 
-function getParser(dataType: number) {
+const getParser = (dataType: number) => {
   const DATA_TYPE = [...DATA_TYPE_TEMPLATE];
   switch (DATA_TYPE[dataType]) {
     case "Coil":
@@ -266,9 +268,9 @@ function getParser(dataType: number) {
     default:
       return DecToHexString;
   }
-}
+};
 
-function getModbusHex(modbusArray: IModbus[]) {
+const getModbusHex = (modbusArray: IModbus[]) => {
   let result = "";
   if (modbusArray.length == 0) return result;
   for (const modbus of modbusArray) {
@@ -281,21 +283,23 @@ function getModbusHex(modbusArray: IModbus[]) {
     }
   }
   return result;
-}
+};
 
-function getModbusChannelDataHex(channelId: number, dataType: number) {
+const getModbusChannelDataHex = (channelId: number, dataType: number) => {
   let value = (channelId << 4) + dataType;
   return DecToHexString(value, 1);
-}
+};
 
-function getModbusRegisterSettingHex(registerSetting: IModbusRegisterSetting) {
+const getModbusRegisterSettingHex = (
+  registerSetting: IModbusRegisterSetting
+) => {
   let value =
     (registerSetting.sign << 7) +
     (registerSetting.decimal << 4) +
     (registerSetting.status << 3) +
     registerSetting.quantity;
   return DecToHexString(value, 1);
-}
+};
 
 /***********************************/
 
@@ -317,3 +321,11 @@ MB.getRegisterSettingHex = getModbusRegisterSettingHex;
 MB.getDataSize = getDataSize;
 MB.getParser = getParser;
 /***********************************/
+
+// import { decode } from "./uc300";
+// let data = "7EF40F000A7A80576214000000007E";
+// let bytes = Buffer.from(data, "hex");
+// let message = decode(bytes);
+// console.log(JSON.stringify(message, null, 2));
+// // let output = encode(message);
+// // console.log(output)
