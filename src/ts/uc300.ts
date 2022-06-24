@@ -708,7 +708,12 @@ const decode = (bytes: Buffer): IPayload => {
   return output;
 };
 
-// let data = "7EF40F000A7A80576214000000007E";
+// import encode from "./uc300_encoder";
+// let data = "7ef40f000a7a80576214000000007e";
 // let bytes = Buffer.from(data, "hex");
 // let output = JSON.stringify(decode(bytes), null, 2);
-// console.log(output);
+// // console.log(output);
+// let encoded = encode(message);
+// // console.log(encoded);
+
+export default decode;
