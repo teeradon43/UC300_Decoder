@@ -2,7 +2,6 @@ const {
   encode,
   reverseHex,
   DecToHexString,
-  FloatToHexString,
   getPacketLengthHex,
   getPacketVersionHex,
   getTimestampHex,
@@ -15,9 +14,9 @@ const {
   getAnalogInputTogglesHex,
   getAnalogInputValuesHex,
   getModbusHex,
-} = require("./uc300_encoder");
+} = require("../js/uc300_encoder");
 
-const { decode } = require("./uc300");
+const { decode } = require("../js/uc300");
 
 test("reverseHex", () => {
   expect(reverseHex("0000")).toBe("0000");
