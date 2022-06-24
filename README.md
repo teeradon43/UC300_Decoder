@@ -11,7 +11,9 @@ Available:
 - Read Modbus : channelId, dataType, registerSettings, and data
 - Unit Test with Jest
 
-Working:
+Tasks:
 
-- Refactoring
-- Testing
+- [x] Refactoring
+- [x] Testing
+
+Working:
