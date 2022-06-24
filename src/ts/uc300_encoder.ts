@@ -29,7 +29,7 @@ const DATA_TYPE_TEMPLATE = [
 /***********************************/
 
 /******** Data Transform ********/
-const encode = (payload: IPayload) => {
+const encode = (payload: IPayload): string => {
   let output: string[] = [];
   output.push("7e");
   output.push("f4");
@@ -52,7 +52,7 @@ const encode = (payload: IPayload) => {
 /***********************************/
 
 /******** Data Transform ********/
-const reverseHex = (hexString: string) => {
+const reverseHex = (hexString: string): string => {
   let str: string[] = [];
   for (let i = 0, charsLength = hexString.length; i < charsLength; i += 2) {
     str.push(hexString.substring(i, i + 2));
@@ -61,7 +61,7 @@ const reverseHex = (hexString: string) => {
   return str.join("");
 };
 
-const Int8ToHexString = (value: number) => {
+const Int8ToHexString = (value: number): string => {
   if (value < 0) {
     value = 0x100 + value;
   }
@@ -69,7 +69,7 @@ const Int8ToHexString = (value: number) => {
   return hexString.padStart(2, "0");
 };
 
-const Int16ToHexString = (value: number) => {
+const Int16ToHexString = (value: number): string => {
   if (value < 0) {
     value = 0x10000 + value;
   }
@@ -77,7 +77,7 @@ const Int16ToHexString = (value: number) => {
   return hexString.padStart(4, "0");
 };
 
-const Int32ToHexString = (value: number) => {
+const Int32ToHexString = (value: number): string => {
   if (value < 0) {
     value = 0x100000000 + value;
   }
@@ -85,7 +85,7 @@ const Int32ToHexString = (value: number) => {
   return hexString.padStart(8, "0");
 };
 
-const DecToHexString = (value: number, numberOfBytes: number = 1) => {
+const DecToHexString = (value: number, numberOfBytes: number = 1): string => {
   let hexString = "";
   switch (numberOfBytes) {
     case 1:
@@ -103,7 +103,7 @@ const DecToHexString = (value: number, numberOfBytes: number = 1) => {
   return reverseHex(hexString);
 };
 
-const FloatToHexString = (value: number, numberOfBytes: number = 4) => {
+const FloatToHexString = (value: number, numberOfBytes: number = 4): string => {
   //https://stackoverflow.com/a/47187116
   let view = new DataView(new ArrayBuffer(numberOfBytes));
   let arr = new Array<string>(numberOfBytes);
@@ -120,27 +120,27 @@ const FloatToHexString = (value: number, numberOfBytes: number = 4) => {
 /***********************************/
 
 /******** Get Hex from Data ********/
-const getPacketLengthHex = (bytes: string[]) => {
+const getPacketLengthHex = (bytes: string[]): string => {
   let length = bytes.join("").length / 2;
   return DecToHexString(length, 2);
 };
 
-const getPacketVersionHex = (value: number) => {
+const getPacketVersionHex = (value: number): string => {
   return DecToHexString(value, 1);
 };
 
-const getTimestampHex = (dateString: string) => {
+const getTimestampHex = (dateString: string): string => {
   let dateNum = Number(new Date(dateString)) / 1000;
   return DecToHexString(dateNum, 4);
 };
 
-const getSignalStrengthHex = (value: number) => {
+const getSignalStrengthHex = (value: number): string => {
   return DecToHexString(value, 1);
 };
 
 const getDigitalOutputTogglesHex = (
   digitalOutputToggles: IDigitalOutputToggles[]
-) => {
+): string => {
   let result = 0;
   for (let index = 0; index < digitalOutputToggles.length; index++) {
     result += digitalOutputToggles[index].toggle << index;
@@ -150,7 +150,7 @@ const getDigitalOutputTogglesHex = (
 
 const getDigitalOutputStatusesHex = (
   digitalOutputStatuses: IDigitalOutputStatuses[]
-) => {
+): string => {
   let result = 0;
   for (let index = 0; index < digitalOutputStatuses.length; index++) {
     if (digitalOutputStatuses[index].status == null) {
@@ -164,7 +164,7 @@ const getDigitalOutputStatusesHex = (
 
 const getDigitalInputTogglesHex = (
   digitalInputToggles: IDigitalInputToggles[]
-) => {
+): string => {
   let result = 0;
   for (let index = 0; index < digitalInputToggles.length; index++) {
     result += digitalInputToggles[index].toggle << (index * 2);
@@ -174,7 +174,7 @@ const getDigitalInputTogglesHex = (
 
 const getDigitalInputStatusesHex = (
   digitalInputStatuses: IDigitalInputStatuses[]
-) => {
+): string => {
   let result = 0;
   for (let index = 0; index < digitalInputStatuses.length; index++) {
     if (digitalInputStatuses[index].status == null) {
@@ -188,7 +188,7 @@ const getDigitalInputStatusesHex = (
 
 const getDigitalInputCountersHex = (
   digitalInputCounter: IDigitalInputCounters[]
-) => {
+): string => {
   let result = "";
   for (const { counter } of digitalInputCounter) {
     if (counter != null) {
@@ -200,7 +200,7 @@ const getDigitalInputCountersHex = (
 
 const getAnalogInputTogglesHex = (
   analogInputToggles: IAnalogInputToggles[]
-) => {
+): string => {
   let result = 0;
   for (let index = 0; index < 4; index++) {
     result += analogInputToggles[index].toggle << (index * 2);
@@ -212,7 +212,9 @@ const getAnalogInputTogglesHex = (
   return reverseHex(DecToHexString(result, 2));
 };
 
-const getAnalogInputValuesHex = (analogInputValues: IAnalogInputValues[]) => {
+const getAnalogInputValuesHex = (
+  analogInputValues: IAnalogInputValues[]
+): string => {
   let result = "";
   for (const { value } of analogInputValues) {
     if (value != null) {
@@ -222,7 +224,7 @@ const getAnalogInputValuesHex = (analogInputValues: IAnalogInputValues[]) => {
   return result;
 };
 
-const getDataSize = (dataType: number) => {
+const getDataSize = (dataType: number): number => {
   const DATA_TYPE = { ...DATA_TYPE_TEMPLATE };
   switch (DATA_TYPE[dataType]) {
     case "Coil":
@@ -246,7 +248,7 @@ const getDataSize = (dataType: number) => {
   }
 };
 
-const getParser = (dataType: number) => {
+const getParser = (dataType: number): Function => {
   const DATA_TYPE = [...DATA_TYPE_TEMPLATE];
   switch (DATA_TYPE[dataType]) {
     case "Coil":
@@ -270,7 +272,7 @@ const getParser = (dataType: number) => {
   }
 };
 
-const getModbusHex = (modbusArray: IModbus[]) => {
+const getModbusHex = (modbusArray: IModbus[]): string => {
   let result = "";
   if (modbusArray.length == 0) return result;
   for (const modbus of modbusArray) {
@@ -285,14 +287,17 @@ const getModbusHex = (modbusArray: IModbus[]) => {
   return result;
 };
 
-const getModbusChannelDataHex = (channelId: number, dataType: number) => {
+const getModbusChannelDataHex = (
+  channelId: number,
+  dataType: number
+): string => {
   let value = (channelId << 4) + dataType;
   return DecToHexString(value, 1);
 };
 
 const getModbusRegisterSettingHex = (
   registerSetting: IModbusRegisterSetting
-) => {
+): string => {
   let value =
     (registerSetting.sign << 7) +
     (registerSetting.decimal << 4) +
@@ -322,10 +327,12 @@ MB.getDataSize = getDataSize;
 MB.getParser = getParser;
 /***********************************/
 
-// import { decode } from "./uc300";
-// let data = "7EF40F000A7A80576214000000007E";
+// import decode from "./uc300";
+// let data = "7ef40f000a7a80576214000000007e";
 // let bytes = Buffer.from(data, "hex");
 // let message = decode(bytes);
-// console.log(JSON.stringify(message, null, 2));
-// // let output = encode(message);
-// // console.log(output)
+// // console.log(JSON.stringify(message, null, 2));
+// let output = encode(message);
+// // console.log(output);
+
+export default encode;
