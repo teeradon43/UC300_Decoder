@@ -7,6 +7,7 @@ import {
   IDigitalOutputStatuses,
   IDigitalOutputToggles,
   IModbus,
+  IModbusRegisterSetting,
   IPayload,
 } from "./types/type";
 
@@ -134,36 +135,36 @@ const OUTPUT_TEMPLATE: IPayload = {
  * bytes to number
  ********************************************/
 
-const readUInt8LE = (byte: number) => {
+const readUInt8LE = (byte: number): number => {
   return byte & 0xff;
 };
 
-const readInt8LE = (byte: Buffer) => {
+const readInt8LE = (byte: Buffer): number => {
   let ref = readUInt8LE(byte[0]);
   return ref > 0x7f ? ref - 0x100 : ref;
 };
 
-const readUInt16LE = (bytes: Buffer) => {
+const readUInt16LE = (bytes: Buffer): number => {
   let value = (bytes[1] << 8) + bytes[0];
   return value & 0xffff;
 };
 
-const readInt16LE = (bytes: Buffer) => {
+const readInt16LE = (bytes: Buffer): number => {
   let ref = readUInt16LE(bytes);
   return ref > 0x7fff ? ref - 0x10000 : ref;
 };
 
-const readUInt32LE = (bytes: Buffer) => {
+const readUInt32LE = (bytes: Buffer): number => {
   let value = (bytes[3] << 24) + (bytes[2] << 16) + (bytes[1] << 8) + bytes[0];
   return value & 0xffffffff;
 };
 
-const readInt32LE = (bytes: Buffer) => {
+const readInt32LE = (bytes: Buffer): number => {
   let ref = readUInt32LE(bytes);
   return ref > 0x7fffffff ? ref - 0x100000000 : ref;
 };
 
-const readFloatLE = (bytes: Buffer) => {
+const readFloatLE = (bytes: Buffer): number => {
   // JavaScript bitwise operators yield a 32 bits integer, not a float.
   // Assume LSB (least significant byte first).
   let bits = (bytes[3] << 24) | (bytes[2] << 16) | (bytes[1] << 8) | bytes[0];
@@ -174,34 +175,34 @@ const readFloatLE = (bytes: Buffer) => {
   return f;
 };
 
-const byte2hex = (byte: number) => {
+const byte2hex = (byte: number): string => {
   return byte.toString(16);
 };
 
 /* ******************************************
  * sub function
  ********************************************/
-const getDataType = (bytes: Buffer) => {
+const getDataType = (bytes: Buffer): string => {
   return byte2hex(bytes[0]);
 };
 
-const getPacketLength = (bytes: Buffer) => {
+const getPacketLength = (bytes: Buffer): number => {
   return readInt16LE(bytes);
 };
 
-const getPacketVersion = (bytes: Buffer) => {
+const getPacketVersion = (bytes: Buffer): number => {
   return readInt8LE(bytes);
 };
 
-const getTimeStamp = (bytes: Buffer) => {
+const getTimeStamp = (bytes: Buffer): string => {
   return new Date(readUInt32LE(bytes) * 1000).toString();
 };
 
-const getSignalStrength = (bytes: Buffer) => {
+const getSignalStrength = (bytes: Buffer): number => {
   return readInt8LE(bytes);
 };
 
-const getDigitalOutputToggles = (byte: number) => {
+const getDigitalOutputToggles = (byte: number): IDigitalOutputToggles[] => {
   switch (byte) {
     case 0x00:
       return [
@@ -231,7 +232,9 @@ const getDigitalOutputToggles = (byte: number) => {
   }
 };
 
-const hasDigitalOutputStatuses = (toggles: IDigitalOutputToggles[]) => {
+const hasDigitalOutputStatuses = (
+  toggles: IDigitalOutputToggles[]
+): boolean => {
   for (const { toggle } of toggles) {
     if (toggle == ENABLE) {
       return true;
@@ -240,7 +243,7 @@ const hasDigitalOutputStatuses = (toggles: IDigitalOutputToggles[]) => {
   return false;
 };
 
-const getDigitalOutputStatuses = (bytes: number) => {
+const getDigitalOutputStatuses = (bytes: number): IDigitalOutputStatuses[] => {
   let do_statuses = [...DIGITAL_OUTPUT_STATUSES_TEMPLATE];
   switch (bytes) {
     case 0x00:
@@ -267,7 +270,7 @@ const getDigitalOutputStatuses = (bytes: number) => {
   return do_statuses;
 };
 
-const getDigitalInputToggles = (byte: number) => {
+const getDigitalInputToggles = (byte: number): IDigitalInputToggles[] => {
   let di_toggles = [...DIGITAL_INPUT_TOGGLES_TEMPLATE];
   for (let index = 0; index < di_toggles.length; index++) {
     let mode = getDigitalInputMode((byte >> (2 * index)) & 0b11);
@@ -276,7 +279,7 @@ const getDigitalInputToggles = (byte: number) => {
   return di_toggles;
 };
 
-const getDigitalInputMode = (bits: number) => {
+const getDigitalInputMode = (bits: number): number => {
   switch (bits) {
     case 0b00:
       return DISABLE;
@@ -291,7 +294,7 @@ const getDigitalInputMode = (bits: number) => {
   }
 };
 
-const hasInputMode = (inputToggles: IDigitalInputToggles[]) => {
+const hasInputMode = (inputToggles: IDigitalInputToggles[]): boolean => {
   for (const { toggle } of inputToggles) {
     if (toggle == DIGITAL_INPUT_MODE) {
       return true;
@@ -300,7 +303,7 @@ const hasInputMode = (inputToggles: IDigitalInputToggles[]) => {
   return false;
 };
 
-const getDigitalInput = (byte: number) => {
+const getDigitalInput = (byte: number): IDigitalInputStatuses[] => {
   let digital_input_statuses = [...DIGITAL_INPUT_STATUSES_TEMPLATE];
   for (let i = 0; i < 4; i++) {
     if (byte > 0x0f) digital_input_statuses[i].status = ERROR;
@@ -310,7 +313,7 @@ const getDigitalInput = (byte: number) => {
   return digital_input_statuses;
 };
 
-const getDigitalInputStatus = (bit: number) => {
+const getDigitalInputStatus = (bit: number): number => {
   switch (bit) {
     case 0:
       return LOW;
@@ -321,7 +324,7 @@ const getDigitalInputStatus = (bit: number) => {
   }
 };
 
-const hasCounterMode = (inputToggles: IDigitalInputToggles[]) => {
+const hasCounterMode = (inputToggles: IDigitalInputToggles[]): boolean => {
   for (const { toggle } of inputToggles) {
     if (
       toggle == COUNTER_START_COUNTING_MODE ||
@@ -333,7 +336,7 @@ const hasCounterMode = (inputToggles: IDigitalInputToggles[]) => {
   return false;
 };
 
-const getCounterToggleSize = (inputToggles: IDigitalInputToggles[]) => {
+const getCounterToggleSize = (inputToggles: IDigitalInputToggles[]): number => {
   let byteSize = 0;
   let { INT32_LENGTH } = BYTE_LENGTH;
   for (const { toggle } of inputToggles) {
@@ -350,7 +353,7 @@ const getCounterToggleSize = (inputToggles: IDigitalInputToggles[]) => {
 const getDigitalCounter = (
   inputToggles: IDigitalInputToggles[],
   counterBytes: Buffer
-) => {
+): IDigitalInputCounters[] => {
   let di_counters = [...DIGITAL_COUNTER_TEMPLATE];
   let { INT32_LENGTH } = BYTE_LENGTH;
   let counterIndex = 0;
@@ -372,7 +375,7 @@ const getDigitalCounter = (
   return di_counters;
 };
 
-const getToggleAnalogInput = (bits: number) => {
+const getToggleAnalogInput = (bits: number): number => {
   switch (bits) {
     case 0b00:
       return DISABLE;
@@ -385,7 +388,7 @@ const getToggleAnalogInput = (bits: number) => {
   }
 };
 
-const getToggleAnalogStatus = (bytes: Buffer) => {
+const getToggleAnalogStatus = (bytes: Buffer): IAnalogInputToggles[] => {
   let toggles_of_analog_inputs = [...ANALOG_INPUT_TOGGLE_TEMPLATE];
   let byte1 = bytes[0];
   let byte2 = bytes[1];
@@ -405,7 +408,7 @@ const getToggleAnalogStatus = (bytes: Buffer) => {
   return toggles_of_analog_inputs;
 };
 
-const hasAnalogInput = (analogToggles: IAnalogInputToggles[]) => {
+const hasAnalogInput = (analogToggles: IAnalogInputToggles[]): boolean => {
   for (const { toggle } of analogToggles) {
     if (toggle == COLLECTED_FAIL || toggle == COLLECTED_SUCCESS) {
       return true;
@@ -414,7 +417,7 @@ const hasAnalogInput = (analogToggles: IAnalogInputToggles[]) => {
   return false;
 };
 
-const getAnalogInputSize = (analogToggles: IAnalogInputToggles[]) => {
+const getAnalogInputSize = (analogToggles: IAnalogInputToggles[]): number => {
   let byteSize = 0;
   let { FLOAT_LENGTH } = BYTE_LENGTH;
   for (const { toggle } of analogToggles) {
@@ -428,7 +431,7 @@ const getAnalogInputSize = (analogToggles: IAnalogInputToggles[]) => {
 const getAnalogValues = (
   analogToggles: IAnalogInputToggles[],
   analogInputBytes: Buffer
-) => {
+): IAnalogInputValues[] => {
   let analog_input_values = [...ANALOG_INPUT_VALUE_TEMPLATE];
   const { FLOAT_LENGTH } = BYTE_LENGTH;
   let analogIndex = 0;
@@ -447,17 +450,22 @@ const getAnalogValues = (
   return analog_input_values;
 };
 
-const toPrecision = (number: number, precision: number = 1) => {
+const toPrecision = (number: number, precision: number = 1): number => {
   let precisionNumber = 10 ** precision;
   let result = Math.round(number * precisionNumber) / precisionNumber;
   return result;
 };
 
-const isStopByte = (bytes: Buffer) => {
+const isStopByte = (bytes: Buffer): boolean => {
   return bytes[0] == 0x7e;
 };
 
-const getModbusChannelDataType = (byte: number) => {
+type ModbusChannelDataType = {
+  channelId: number;
+  dataType: number;
+};
+
+const getModbusChannelDataType = (byte: number): ModbusChannelDataType => {
   let channelId = (byte >> 4) & 0xf;
   let dataType = byte & 0xf;
   if (dataType > 11 || dataType < 0) {
@@ -466,11 +474,11 @@ const getModbusChannelDataType = (byte: number) => {
   return { channelId, dataType };
 };
 
-const isValidDataType = (dataType: number) => {
+const isValidDataType = (dataType: number): boolean => {
   return dataType !== ERROR;
 };
 
-const getModbusRegisterSetting = (byte: number) => {
+const getModbusRegisterSetting = (byte: number): IModbusRegisterSetting => {
   let sign = (byte >> 7) & 1;
   let decimal = (byte >> 4) & 0b111;
   let status = (byte >> 3) & 1;
@@ -478,7 +486,7 @@ const getModbusRegisterSetting = (byte: number) => {
   return { sign, decimal, status, quantity };
 };
 
-const getDataSize = (dataType: number) => {
+const getDataSize = (dataType: number): number => {
   const DATA_TYPE = [...DATA_TYPE_TEMPLATE];
   switch (DATA_TYPE[dataType]) {
     case "Coil":
@@ -502,7 +510,7 @@ const getDataSize = (dataType: number) => {
   }
 };
 
-const getParser = (dataType: number) => {
+const getParser = (dataType: number): Function => {
   const DATA_TYPE = [...DATA_TYPE_TEMPLATE];
   switch (DATA_TYPE[dataType]) {
     case "Coil":
@@ -533,20 +541,20 @@ const getParser = (dataType: number) => {
 
 const DO = () => {};
 // Decorator Pattern
-DO.getToggles = (bytes: Buffer) => {
+DO.getToggles = (bytes: Buffer): IDigitalOutputToggles[] => {
   return getDigitalOutputToggles(bytes[0]);
 };
 DO.hasStatuses = hasDigitalOutputStatuses;
-DO.getStatuses = (bytes: Buffer) => {
+DO.getStatuses = (bytes: Buffer): IDigitalOutputStatuses[] => {
   return getDigitalOutputStatuses(bytes[0]);
 };
 
 const DI = () => {};
-DI.getToggles = (bytes: Buffer) => {
+DI.getToggles = (bytes: Buffer): IDigitalInputToggles[] => {
   return getDigitalInputToggles(bytes[0]);
 };
 DI.hasInputMode = hasInputMode;
-DI.getStatuses = (bytes: Buffer) => {
+DI.getStatuses = (bytes: Buffer): IDigitalInputStatuses[] => {
   return getDigitalInput(bytes[0]);
 };
 DI.hasCounterMode = hasCounterMode;
@@ -560,10 +568,10 @@ AI.getSize = getAnalogInputSize;
 AI.getValues = getAnalogValues;
 
 const MB = () => {};
-MB.getChannelDataType = (bytes: Buffer) => {
+MB.getChannelDataType = (bytes: Buffer): ModbusChannelDataType => {
   return getModbusChannelDataType(bytes[0]);
 };
-MB.getRegisterSetting = (bytes: Buffer) => {
+MB.getRegisterSetting = (bytes: Buffer): IModbusRegisterSetting => {
   return getModbusRegisterSetting(bytes[0]);
 };
 MB.getDataSize = getDataSize;
@@ -575,30 +583,30 @@ MB.isValidType = isValidDataType;
  ********************************************/
 
 let Reader = (arr: Buffer) => {
-  let i = 0;
-  const read = (size: number) => {
+  let i: number = 0;
+  const read = (size: number): Buffer => {
     const result = arr.slice(i, i + size);
     i += size;
     return result;
   };
 
-  const skip = (size: number) => {
+  const skip = (size: number): void => {
     i += size;
   };
 
-  const reset = () => {
+  const reset = (): void => {
     i = 0;
   };
 
-  const hasNext = () => {
+  const hasNext = (): boolean => {
     return i < arr.length;
   };
 
-  const getSize = () => {
+  const getSize = (): number => {
     return arr.length;
   };
 
-  const index = () => {
+  const index = (): number => {
     return i;
   };
 
@@ -615,7 +623,7 @@ let Reader = (arr: Buffer) => {
 /* ******************************************
  * Main DECODE Function
  ********************************************/
-const decode = (bytes: Buffer) => {
+const decode = (bytes: Buffer): IPayload => {
   let output = { ...OUTPUT_TEMPLATE };
 
   const { PACKET_LENGTH, TIMESTAMP_LENGTH, TOGGLE_ANALOG_INPUT_LENGTH } =
